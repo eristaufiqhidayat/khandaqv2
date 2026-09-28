@@ -32,6 +32,34 @@ return [
 
     'connections' => [
 
+        // Database aplikasi lama (hanya dibaca oleh Sinkronisasi data lama). Beri user ini hak SELECT saja.
+        'lama' => [
+            'driver' => 'mysql',
+            'host' => env('DB_LAMA_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_LAMA_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_LAMA_DATABASE', 'lembaha1_sino'),
+            'username' => env('DB_LAMA_USERNAME'),
+            'password' => env('DB_LAMA_PASSWORD'),
+            'charset' => 'latin1',
+            'collation' => 'latin1_swedish_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
+        // Database login aplikasi lama (Myth/Auth) untuk membawa password wali. Opsional.
+        'login_lama' => [
+            'driver' => 'mysql',
+            'host' => env('DB_LAMA_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_LAMA_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_LOGIN_LAMA_DATABASE', 'lembaha1_igni399'),
+            'username' => env('DB_LAMA_USERNAME'),
+            'password' => env('DB_LAMA_PASSWORD'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_general_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),

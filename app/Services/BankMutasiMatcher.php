@@ -147,6 +147,16 @@ class BankMutasiMatcher
         });
     }
 
+    /** Baris "ditinjau" yang ternyata bukan setoran santri (biaya bank, dana masuk lain). */
+    public function abaikan(BankMutasi $baris, User $petugas, string $catatan): void
+    {
+        Otorisasi::pastikan($petugas, Izin::SetoranVerifikasi);
+        if ($baris->status !== StatusBankMutasi::Ditinjau) {
+            throw new AturanDilanggar('Hanya baris berstatus ditinjau yang bisa diabaikan.');
+        }
+        $baris->update(['status' => StatusBankMutasi::Diabaikan, 'catatan' => $catatan]);
+    }
+
     public function deteksiSantri(BankMutasi $baris): ?Santri
     {
         if (preg_match('/\bKHQ[\s\-:]*(\d{3})\b/i', (string) $baris->deskripsi, $m)) {

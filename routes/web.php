@@ -9,6 +9,7 @@ use App\Http\Controllers\KalenderController;
 use App\Http\Controllers\FotoSantriController;
 use App\Http\Controllers\WaliSantriController;
 use App\Http\Controllers\Wali\ProfilController;
+use App\Http\Controllers\Wali\LaporTransferController;
 use App\Http\Controllers\TarifController;
 use App\Http\Controllers\PotonganController;
 use App\Http\Controllers\PeriodeController;
@@ -54,6 +55,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/tabungan', [PortalController::class, 'tabungan'])->name('tabungan');
         Route::get('/kalender', [PortalController::class, 'kalender'])->name('kalender');
         Route::get('/data', [PortalController::class, 'data'])->name('data');
+        Route::get('/lapor-transfer', [LaporTransferController::class, 'create'])->name('lapor');
+        Route::post('/lapor-transfer', [LaporTransferController::class, 'store'])->name('lapor.store');
         Route::get('/profil', [ProfilController::class, 'edit'])->name('profil');
         Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
     });

@@ -53,6 +53,18 @@ class AkunService
         return $password;
     }
 
+    /** Cari akun untuk login: username, email, atau nomor WhatsApp (format apa pun). Dipakai web dan API aplikasi. */
+    public function cariUntukMasuk(string $masukan): ?User
+    {
+        $masukan = trim($masukan);
+        $telepon = PendaftaranService::normalTelepon($masukan);
+
+        return User::where('username', $masukan)
+            ->orWhere('email', \Illuminate\Support\Str::lower($masukan))
+            ->when(strlen($telepon) >= 9, fn ($q) => $q->orWhere('telepon', $telepon)->orWhere('username', $telepon))
+            ->first();
+    }
+
     public function gantiPassword(User $user, string $lama, string $baru): void
     {
         if (! password_verify($lama, $user->password)) {

@@ -12,7 +12,7 @@
 <nav class="wb-laci" id="wb-laci" aria-label="Menu wali" hidden>
   <div class="wb-laci-h"><img src="{{ asset('img/logo.png') }}" alt="" width="44" height="44"><div><b>{{ auth()->user()->name }}</b><span>Portal wali santri · Khandaq</span></div></div>
   @php($r = request()->route()?->getName())
-  @foreach (['wali.beranda' => 'Menu utama', 'wali.raport' => 'Raport', 'wali.tabungan' => 'Tabungan', 'wali.kalender' => 'Kalender', 'wali.data' => 'Data santri', 'wali.profil' => 'Profil saya'] as $rute => $label)
+  @foreach (['wali.beranda' => 'Menu utama', 'wali.raport' => 'Raport', 'wali.tabungan' => 'Tabungan', 'wali.lapor' => 'Lapor transfer', 'wali.kalender' => 'Kalender', 'wali.data' => 'Data santri', 'wali.profil' => 'Profil saya'] as $rute => $label)
     <a href="{{ route($rute) }}" @if ($r === $rute) aria-current="page" @endif>{{ $label }}</a>
   @endforeach
   <a href="{{ route('password.ganti') }}">Ganti password</a>

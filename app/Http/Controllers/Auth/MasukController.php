@@ -32,7 +32,7 @@ class MasukController extends Controller
             throw ValidationException::withMessages(['username' => 'Terlalu banyak percobaan. Coba lagi dalam '.RateLimiter::availableIn($kunci).' detik.']);
         }
 
-        $user = $this->cari($data['username']);
+        $user = $akun->cariUntukMasuk($data['username']);
         if (! $user || ! $akun->cocokkanPassword($user, $data['password'])) {
             RateLimiter::hit($kunci, 60);
             throw ValidationException::withMessages(['username' => 'Username atau password salah.']);
@@ -55,16 +55,5 @@ class MasukController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
-    }
-
-    private function cari(string $masukan): ?User
-    {
-        $masukan = trim($masukan);
-        $telepon = PendaftaranService::normalTelepon($masukan);
-
-        return User::where('username', $masukan)
-            ->orWhere('email', Str::lower($masukan))
-            ->when(strlen($telepon) >= 9, fn ($q) => $q->orWhere('telepon', $telepon)->orWhere('username', $telepon))
-            ->first();
     }
 }

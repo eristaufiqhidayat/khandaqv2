@@ -12,7 +12,8 @@
   <section class="card wb-kartu stack">
     <div class="card-h" style="margin:0"><div class="nama-foto">@include('santri._foto', ['s' => $a['santri']])<h2>{{ $a['santri']->nama }}</h2></div><span class="chip">Kode transfer {{ $a['santri']->kode_unik ?? '—' }}</span></div>
     <div><div class="eyebrow">Saldo tabungan</div><div class="rp wb-saldo">{{ $rp($a['saldo']) }}</div>
-      <p class="hint">Transfer ke rekening pondok dengan menambahkan kode {{ $a['santri']->kode_unik ?? '—' }} di akhir nominal agar tercatat otomatis.</p></div>
+      <p class="hint">Transfer ke rekening pondok dengan menambahkan kode {{ $a['santri']->kode_unik ?? '—' }} di akhir nominal agar tercatat otomatis.</p>
+      <a class="btn p sm" href="{{ route('wali.lapor', ['anak' => $a['santri']->id]) }}">Lapor transfer</a></div>
     <div>
       <h3 style="margin-bottom:4px">Tagihan belum lunas</h3>
       @forelse ($a['tagihan'] as $t)

@@ -11,6 +11,16 @@ class BankImpor extends Model
 
     protected $guarded = ['id'];
 
+    protected function casts(): array
+    {
+        return ['periode_awal' => \App\Casts\Tanggal::class, 'periode_akhir' => \App\Casts\Tanggal::class];
+    }
+
+    public function pengimpor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diimpor_oleh');
+    }
+
     public function baris(): HasMany
     {
         return $this->hasMany(BankMutasi::class);

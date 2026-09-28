@@ -58,7 +58,7 @@ class UbahWaliTest extends KhandaqTestCase
         $this->actingAs($w)->get(route('wali.beranda'))->assertSee(route('wali.profil'), false);
         $this->get(route('wali.profil'))->assertOk();
         $this->put(route('wali.profil.update'), ['alamat' => 'Alamat wali baru', 'pekerjaan' => 'Petani', 'email' => 'wali3@contoh.test', 'telepon' => '081200000004'])
-            ->assertRedirect(route('wali.beranda'))->assertSessionHas('status');
+            ->assertRedirect(route('wali.data'))->assertSessionHas('status');
         $w->refresh();
         $this->assertSame(['Alamat wali baru', 'Petani', 'wali3@contoh.test', '081200000003', '081200000004'],
             [$w->alamat, $w->pekerjaan, $w->email, $w->telepon, $w->telepon_menunggu]);

@@ -34,6 +34,6 @@ class ProfilController extends Controller
             $pesan .= " Nomor WhatsApp baru {$wali->telepon_menunggu} menunggu verifikasi pondok; sementara pemberitahuan tetap dikirim ke {$teleponLama}.";
         }
 
-        return redirect()->route('wali.beranda')->with('status', $pesan);
+        return redirect()->route('wali.data')->with('status', $pesan);
     }
 }

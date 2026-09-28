@@ -133,8 +133,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [KenaikanController::class, 'store'])->name('store');
     });
 
+    // Layar Pengguna: tab Staf (pengguna.kelola) dan tab Wali santri (juga untuk akun_wali.reset).
+    Route::get('/pengguna', [PenggunaController::class, 'index'])->name('pengguna.index')
+        ->middleware('permission:'.Izin::PenggunaKelola->value.'|'.Izin::AkunWaliReset->value);
+    Route::middleware($izin(Izin::AkunWaliReset))->prefix('pengguna/wali')->name('pengguna.wali.')->group(function () {
+        Route::post('/{user}/reset', [PenggunaController::class, 'waliReset'])->name('reset');
+        Route::post('/{user}/aktif', [PenggunaController::class, 'waliAktif'])->name('aktif');
+    });
     Route::middleware($izin(Izin::PenggunaKelola))->prefix('pengguna')->name('pengguna.')->group(function () {
-        Route::get('/', [PenggunaController::class, 'index'])->name('index');
         Route::post('/', [PenggunaController::class, 'store'])->name('store');
         Route::post('/{user}/peran', [PenggunaController::class, 'peran'])->name('peran');
         Route::post('/{user}/reset', [PenggunaController::class, 'reset'])->name('reset');

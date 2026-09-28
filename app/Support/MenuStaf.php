@@ -11,12 +11,13 @@ use Illuminate\Support\Facades\Route;
  */
 class MenuStaf
 {
-    /** @return list<array{label:string, route:string, izin:\App\Enums\Izin}> */
+    /** @return list<array{label:string, route:string, izin:\App\Enums\Izin|list<\App\Enums\Izin>}> */
     public static function untuk(User $user): array
     {
         return array_values(array_filter(
             config('khandaq-menu'),
-            fn (array $m) => Route::has($m['route']) && $user->hasPermissionTo($m['izin']->value),
+            fn (array $m) => Route::has($m['route'])
+                && collect(is_array($m['izin']) ? $m['izin'] : [$m['izin']])->contains(fn ($i) => $user->hasPermissionTo($i->value)),
         ));
     }
 

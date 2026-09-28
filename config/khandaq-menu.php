@@ -5,7 +5,7 @@ use App\Enums\Izin;
 /**
  * Menu staf. Menu tampil bila user memiliki izinnya, apa pun perannya.
  * Jadi memindahkan izin di layar Hak akses otomatis memindahkan menunya.
- * Route yang sama dijaga middleware `permission:<izin>`.
+ * Route yang sama dijaga middleware `permission:<izin>`. `izin` boleh berupa daftar: cukup punya salah satunya.
  */
 return [
     ['label' => 'Ringkasan keuangan', 'route' => 'laporan.ringkasan', 'izin' => Izin::LaporanLihat],
@@ -24,7 +24,7 @@ return [
     ['label' => 'Potongan otomatis', 'route' => 'potongan.index', 'izin' => Izin::PengecualianKelola],
     ['label' => 'Tahun ajaran & kelas', 'route' => 'periode.index', 'izin' => Izin::PeriodeKelola],
     ['label' => 'Rekening & akun biaya', 'route' => 'masterkeu.index', 'izin' => Izin::MasterKeuanganKelola],
-    ['label' => 'Pengguna', 'route' => 'pengguna.index', 'izin' => Izin::PenggunaKelola],
+    ['label' => 'Pengguna', 'route' => 'pengguna.index', 'izin' => [Izin::PenggunaKelola, Izin::AkunWaliReset]], // Admin Office: tab Wali saja
     ['label' => 'Siaran WhatsApp', 'route' => 'siaran.index', 'izin' => Izin::WaSiaran],
     ['label' => 'Sinkronisasi data lama', 'route' => 'sinkronisasi.index', 'izin' => Izin::MigrasiJalankan],
     ['label' => 'Hak akses', 'route' => 'hakakses.index', 'izin' => Izin::HakAksesKelola],

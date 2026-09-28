@@ -19,4 +19,9 @@ class JedaPotongan extends Model
     {
         return ['mulai' => Tanggal::class, 'selesai' => Tanggal::class];
     }
+
+    public function jenisTagihan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(JenisTagihan::class);
+    }
 }

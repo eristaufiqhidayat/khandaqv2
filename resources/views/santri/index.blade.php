@@ -2,7 +2,7 @@
 @section('judul', 'Data santri & wali')
 @section('halaman')
 <div class="top"><div><h1>Data santri & wali</h1><p class="muted">Tahun ajaran {{ $ta->nama }} · {{ $santri->total() }} santri ditampilkan</p></div>
-  <a class="btn p" href="{{ route('santri.create') }}">Tambah santri</a></div>
+  <div class="row"><a class="btn" href="{{ route('kenaikan.index') }}">Kenaikan kelas</a><a class="btn p" href="{{ route('santri.create') }}">Tambah santri</a></div></div>
 @error('santri')<div class="alert err" role="alert">{{ $message }}</div>@enderror
 
 @if ($nomorMenunggu->isNotEmpty())

@@ -151,6 +151,42 @@ class MigrasiDataLama
         }
     }
 
+    /**
+     * Isi file dari kolom BLOB aplikasi lama. Aplikasi lama menyimpan raport sebagai teks base64
+     * (base64_encode(file_get_contents(...)), ditampilkan lewat data:application/pdf;base64,...), bukan byte PDF.
+     * Terima keduanya: teks base64 (dengan/tanpa awalan data:) di-decode; byte mentah dipakai apa adanya.
+     *
+     * @return array{0: string, 1: string, 2: string} [isi, mime, ekstensi]
+     */
+    public static function isiFileLama(string $mentah): array
+    {
+        $isi = $mentah;
+        $teks = ltrim($mentah);
+        if (! self::tandaFile($teks)) {
+            $b64 = preg_replace('/^data:[^;,]*;base64,/i', '', $teks);
+            $hasil = base64_decode(preg_replace('/\s+/', '', $b64), true);
+            if ($hasil !== false && self::tandaFile($hasil)) {
+                $isi = $hasil;
+            }
+        }
+
+        return match (self::tandaFile($isi)) {
+            'png' => [$isi, 'image/png', 'png'],
+            'jpg' => [$isi, 'image/jpeg', 'jpg'],
+            default => [$isi, 'application/pdf', 'pdf'],
+        };
+    }
+
+    private static function tandaFile(string $isi): ?string
+    {
+        return match (true) {
+            str_starts_with($isi, '%PDF') => 'pdf',
+            str_starts_with($isi, "\x89PNG") => 'png',
+            str_starts_with($isi, "\xFF\xD8\xFF") => 'jpg',
+            default => null,
+        };
+    }
+
     /** @var array<string, list<string>> */
     private array $kolomBaca = [];
 
@@ -679,13 +715,12 @@ class MigrasiDataLama
                 continue;
             }
             $sudah["{$s}|{$sem[0]}|{$jenis}"] = true;
-            $ext = str_contains((string) $r->mime, 'pdf') ? 'pdf' : (str_contains((string) $r->mime, 'png') ? 'png' : (str_contains((string) $r->mime, 'jp') ? 'jpg' : 'pdf'));
+            [$isi, $mime, $ext] = self::isiFileLama((string) $this->lama->table('tbl_nilai_akhir')->where('id_nilai', $r->id_nilai)->value('image'));
             $path = "raport/legacy/{$r->id_nilai}.{$ext}";
-            $isi = (string) $this->lama->table('tbl_nilai_akhir')->where('id_nilai', $r->id_nilai)->value('image');
             ($this->simpanFile)($path, $isi);
             unset($isi);
             DB::table('raport')->insert(['santri_id' => $s, 'semester_id' => $sem[0], 'jenis' => $jenis, 'file_path' => $path,
-                'mime' => $r->mime ?: 'application/pdf', 'diterbitkan_pada' => $this->now, 'diunggah_oleh' => $this->adminId,
+                'mime' => $mime, 'diterbitkan_pada' => $this->now, 'diunggah_oleh' => $this->adminId,
                 'legacy_id_nilai' => $r->id_nilai, 'created_at' => $this->now, 'updated_at' => $this->now]);
             $this->masuk('tbl_nilai_akhir');
         }

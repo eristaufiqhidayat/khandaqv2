@@ -6,8 +6,11 @@ use App\Http\Controllers\Auth\MasukController;
 use App\Http\Controllers\BankImporController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\KasirController;
+use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\PersetujuanController;
+use App\Http\Controllers\RaportController;
 use App\Http\Controllers\RingkasanController;
+use App\Http\Controllers\SantriController;
 use App\Http\Controllers\SegeraController;
 use App\Http\Controllers\SiaranWaController;
 use App\Http\Controllers\SinkronisasiController;
@@ -61,6 +64,41 @@ Route::middleware('auth')->group(function () {
         Route::post('/bank/{bank}/abaikan', [VerifikasiController::class, 'abaikan'])->name('abaikan');
     });
 
+    Route::middleware($izin(Izin::SantriKelola))->prefix('santri')->name('santri.')->group(function () {
+        Route::get('/', [SantriController::class, 'index'])->name('index');
+        Route::get('/baru', [SantriController::class, 'create'])->name('create');
+        Route::post('/', [SantriController::class, 'store'])->name('store');
+        Route::get('/{santri}', [SantriController::class, 'show'])->name('show');
+        Route::get('/{santri}/ubah', [SantriController::class, 'edit'])->name('edit');
+        Route::put('/{santri}', [SantriController::class, 'update'])->name('update');
+        Route::post('/{santri}/aktifkan', [SantriController::class, 'aktifkan'])->name('aktifkan');
+        Route::post('/{santri}/keluarkan', [SantriController::class, 'keluarkan'])->name('keluarkan');
+        Route::post('/{santri}/wali', [SantriController::class, 'waliStore'])->name('wali.store');
+        Route::post('/{santri}/wali/{wali}/lepas', [SantriController::class, 'waliLepas'])->name('wali.lepas');
+        Route::post('/{santri}/wali/{wali}/reset', [SantriController::class, 'waliReset'])->name('wali.reset');
+    });
+    Route::middleware($izin(Izin::DataWaliVerifikasi))->group(function () {
+        Route::post('/nomor-wali/{wali}/setujui', [SantriController::class, 'teleponSetujui'])->name('wali.telepon.setujui');
+        Route::post('/nomor-wali/{wali}/tolak', [SantriController::class, 'teleponTolak'])->name('wali.telepon.tolak');
+    });
+
+    Route::middleware($izin(Izin::PendaftaranProses))->prefix('pendaftaran')->name('pendaftaran.')->group(function () {
+        Route::get('/', [PendaftaranController::class, 'index'])->name('index');
+        Route::post('/', [PendaftaranController::class, 'store'])->name('store');
+        Route::post('/{pendaftaran}/lunas', [PendaftaranController::class, 'lunas'])->name('lunas');
+        Route::post('/{pendaftaran}/terima', [PendaftaranController::class, 'terima'])->name('terima');
+        Route::post('/{pendaftaran}/tolak', [PendaftaranController::class, 'tolak'])->name('tolak');
+    });
+
+    // Membuka file raport: staf (raport.lihat_semua) atau wali untuk anaknya bila tidak tertahan (RaportPolicy).
+    Route::get('/raport/{raport}/lihat', [RaportController::class, 'lihat'])->name('raport.lihat');
+    Route::middleware($izin(Izin::RaportUnggah))->prefix('raport')->name('raport.')->group(function () {
+        Route::get('/', [RaportController::class, 'index'])->name('index');
+        Route::post('/santri/{santri}', [RaportController::class, 'unggah'])->name('unggah');
+        Route::post('/{raport}/terbitkan', [RaportController::class, 'terbitkan'])->name('terbitkan');
+    });
+    Route::post('/raport/santri/{santri}/dispensasi', [RaportController::class, 'dispensasi'])->middleware($izin(Izin::KeringananAjukan))->name('raport.dispensasi');
+
     Route::middleware($izin(Izin::KeringananSetujui))->prefix('persetujuan')->name('persetujuan.')->group(function () {
         Route::get('/', [PersetujuanController::class, 'index'])->name('index');
         Route::post('/{keringanan}/setujui', [PersetujuanController::class, 'setujui'])->name('setujui');
@@ -101,9 +139,6 @@ Route::middleware('auth')->group(function () {
 
     // Menu yang layarnya belum dibuat: route & izin sudah aktif, isinya halaman "sedang dibangun".
     foreach ([
-        ['pendaftaran', 'pendaftaran.index', Izin::PendaftaranProses],
-        ['santri', 'santri.index', Izin::SantriKelola],
-        ['raport', 'raport.index', Izin::RaportUnggah],
         ['pengeluaran', 'pengeluaran.index', Izin::PengeluaranCatat],
         ['tarif', 'tarif.index', Izin::TarifKelola],
         ['potongan', 'potongan.index', Izin::PengecualianKelola],

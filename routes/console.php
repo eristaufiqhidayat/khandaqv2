@@ -1,8 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Di cPanel cukup satu cron: * * * * * cd /path/app && php artisan schedule:run >> /dev/null 2>&1
+
+// Tagihan bulanan terbit tiap tanggal 1 pukul 00:10 (jatuh tempo akhir bulan).
+Schedule::command('khandaq:tagihan-bulanan')->monthlyOn(1, '00:10')->withoutOverlapping();
+
+// Pengingat H-3 & tahapan tunggakan, setiap pagi.
+Schedule::command('khandaq:peringatan')->dailyAt('07:00')->withoutOverlapping();

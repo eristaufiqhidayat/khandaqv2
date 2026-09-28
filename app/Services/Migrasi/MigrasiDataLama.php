@@ -99,6 +99,7 @@ class MigrasiDataLama
     public function jalankan(User $admin, ?MigrasiRun $run = null): MigrasiRun
     {
         $this->pastikanBoleh($admin);
+        self::longgarkanMemori();
         $this->adminId = $admin->id;
         $this->now = CarbonImmutable::now();
         $this->lama = DB::connection($this->koneksiLama);
@@ -134,6 +135,40 @@ class MigrasiDataLama
         return $this->run->refresh();
     }
 
+    /** Batas bawaan PHP di banyak server hanya 128 MB; sinkronisasi membaca ~95 ribu transaksi. Naikkan ke 512 MB bila lebih kecil. */
+    public static function longgarkanMemori(string $target = '512M'): void
+    {
+        $keByte = function (string $v): int {
+            $n = (int) $v;
+
+            return match (strtoupper(substr(trim($v), -1))) {
+                'G' => $n * 1024 ** 3, 'M' => $n * 1024 ** 2, 'K' => $n * 1024, default => $n,
+            };
+        };
+        $batas = (string) ini_get('memory_limit');
+        if ($batas !== '-1' && $keByte($batas) < $keByte($target)) {
+            @ini_set('memory_limit', $target);
+        }
+    }
+
+    /** @var array<string, list<string>> */
+    private array $kolomBaca = [];
+
+    /**
+     * Query ke tabel lama TANPA kolom file (foto santri, bukti transfer, dst.). Kolom BLOB bisa berukuran MB per baris
+     * dan driver MySQL menampung seluruh hasil query di memori PHP, sehingga server 128 MB kehabisan memori.
+     * Sinkronisasi tidak memakai kolom-kolom itu (raport dibaca terpisah, satu file per query).
+     */
+    private function baca(string $tabel): \Illuminate\Database\Query\Builder
+    {
+        $this->kolomBaca[$tabel] ??= collect(\Illuminate\Support\Facades\Schema::connection($this->lama->getName())->getColumns($tabel))
+            ->reject(fn (array $k) => preg_match('/blob|binary/i', (string) ($k['type_name'] ?? '').' '.($k['type'] ?? ''))
+                || preg_match('/^(image|foto|photo|bukti\d*|bukti_transfer)$/i', $k['name']))
+            ->pluck('name')->all();
+
+        return $this->lama->table($tabel)->select($this->kolomBaca[$tabel]);
+    }
+
     // ------------------------------------------------------------------ tahap
 
     private function kosongkan(): void
@@ -156,7 +191,7 @@ class MigrasiDataLama
 
     private function periode(): void
     {
-        $rows = $this->lama->table('setup_periode')->orderBy('id_periode')->get();
+        $rows = $this->baca('setup_periode')->orderBy('id_periode')->get();
         foreach ($rows as $r) {
             if (! preg_match('/^(\d{4})\s*\/\s*(\d{4})$/', trim((string) $r->tahun_ajaran), $m)) {
                 $this->lewati('setup_periode', "id {$r->id_periode}: tahun ajaran '{$r->tahun_ajaran}' tidak dikenali");
@@ -182,7 +217,7 @@ class MigrasiDataLama
 
     private function kelas(): void
     {
-        $rows = $this->lama->table('setup_kelas')->get();
+        $rows = $this->baca('setup_kelas')->get();
         foreach ($rows as $r) {
             $nama = trim((string) $r->nama_kelas);
             preg_match('/\d+/', $nama, $m);
@@ -200,7 +235,7 @@ class MigrasiDataLama
 
     private function santri(): void
     {
-        $rows = $this->lama->table('data_siswa')->orderBy('id_siswa')->get();
+        $rows = $this->baca('data_siswa')->orderBy('id_siswa')->get();
         $nisDipakai = [];
         $kodeDipakai = [];
         foreach ($rows as $r) {
@@ -249,7 +284,7 @@ class MigrasiDataLama
 
     private function wali(): void
     {
-        $ortu = $this->lama->table('data_orangtua')->orderBy('id_orangtua')->get();
+        $ortu = $this->baca('data_orangtua')->orderBy('id_orangtua')->get();
         $userLama = [];
         $username = DB::table('users')->pluck('id', 'username')->all();
         $email = DB::table('users')->pluck('id', 'email')->all();
@@ -290,7 +325,7 @@ class MigrasiDataLama
             $this->catatan('data_orangtua', (count($loginLama) - $dibawa).' akun wali di aplikasi lama tidak punya data orang tua (tidak disalin)');
         }
 
-        $akses = $this->lama->table('tbl_akses_ortu')->get();
+        $akses = $this->baca('tbl_akses_ortu')->get();
         $sudah = [];
         foreach ($akses as $a) {
             $u = $userLama[$a->id_orangtua] ?? null;
@@ -333,12 +368,12 @@ class MigrasiDataLama
             $this->masuk($tabel);
         };
         // Kelas sekarang (tbl_ruangan) untuk tahun ajaran aktif lebih diutamakan.
-        $now = $this->lama->table('tbl_ruangan')->get();
+        $now = $this->baca('tbl_ruangan')->get();
         foreach ($now as $r) {
             $tulis('tbl_ruangan', $r->id_siswa, $r->id_kelas, $this->taAktif);
         }
         $this->sumber('tbl_ruangan', count($now));
-        $hist = $this->lama->table('tbl_ruangan_periode')->get();
+        $hist = $this->baca('tbl_ruangan_periode')->get();
         foreach ($hist as $r) {
             $tulis('tbl_ruangan_periode', $r->id_siswa, $r->id_kelas, $this->semByPeriode[$r->id_periode][1] ?? null);
         }
@@ -348,7 +383,7 @@ class MigrasiDataLama
     private function akunPengusul(): void
     {
         foreach (['tbl_akun' => ['akun', 'kode_akun', 'nama_akun'], 'tbl_pengusul' => ['pengusul', 'kode_pengusul', 'nama_pengusul']] as $src => [$dst, $k, $n]) {
-            $rows = $this->lama->table($src)->get();
+            $rows = $this->baca($src)->get();
             $sudah = [];
             foreach ($rows as $r) {
                 $kode = trim((string) $r->{$k});
@@ -367,7 +402,7 @@ class MigrasiDataLama
 
     private function tarif(): void
     {
-        $rows = $this->lama->table('tbl_tarif_spp')->orderBy('no')->get();
+        $rows = $this->baca('tbl_tarif_spp')->orderBy('no')->get();
         $spp = $this->jenisId['SPP'];
         foreach ($rows as $r) {
             $sem = $this->semByPeriode[(int) $r->periode] ?? null;
@@ -398,7 +433,7 @@ class MigrasiDataLama
 
     private function beasiswa(): void
     {
-        $rows = $this->lama->table('tbl_beasiswa')->get();
+        $rows = $this->baca('tbl_beasiswa')->get();
         foreach ($rows as $r) {
             if ($r->peserta !== 'yes') {
                 $this->lewati('tbl_beasiswa', 'bukan peserta aktif');
@@ -440,7 +475,7 @@ class MigrasiDataLama
         $total = 0;
         $tglSalah = 0;
         $tanpaKode = 0;
-        $this->lama->table('tbl_tabungan_transaksi')->orderBy('notransaksi')
+        $this->baca('tbl_tabungan_transaksi')->orderBy('notransaksi')
             ->chunk(1000, function ($rows) use ($kodeArah, $buku, &$total, &$tglSalah, &$tanpaKode) {
                 $tagihan = [];
                 $mutasi = [];
@@ -523,7 +558,7 @@ class MigrasiDataLama
             'tbl_dsb' => ['id_siswa', ['TDADM'], true, fn ($r) => 'DSB'],
         ];
         foreach ($sumber as $tabel => [$kolSantri, $kodePasangan, $pakaiRp, $jenisDari]) {
-            $rows = $this->lama->table($tabel)->orderBy('no')->get();
+            $rows = $this->baca($tabel)->orderBy('no')->get();
             $cocok = 0;
             $luar = 0;
             foreach ($rows as $r) {
@@ -573,7 +608,7 @@ class MigrasiDataLama
         $peta = ['tbl_pengeluaran' => 'SPP', 'tbl_pengeluaran_dsb' => 'DSB', 'tbl_pengeluaran_du' => 'DU',
             'tbl_pengeluaran_formulir' => 'FORMULIR', 'tbl_pengeluaran_pts' => 'PTS', 'tbl_pengeluaran_pas' => 'PAS'];
         foreach ($peta as $tabel => $dana) {
-            $rows = $this->lama->table($tabel)->get();
+            $rows = $this->baca($tabel)->get();
             $isi = [];
             foreach ($rows as $r) {
                 $isi[] = [
@@ -594,7 +629,7 @@ class MigrasiDataLama
 
     private function mutasiBsi(): void
     {
-        $rows = $this->lama->table('tbl_mutasi_bsi')->get();
+        $rows = $this->baca('tbl_mutasi_bsi')->get();
         if ($rows->isEmpty()) {
             $this->sumber('tbl_mutasi_bsi', 0);
 

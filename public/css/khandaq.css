@@ -269,3 +269,10 @@ body:has(.wb-bar){margin:0}
 .wb-keg:last-child{border-bottom:0}
 .wb-keg.lewat{opacity:.55}
 @media (max-width:380px){.wb-grid{gap:16px 12px}.wb-bar h1{font-size:21px}}
+
+/* Paginasi */
+.paginasi{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:14px}
+.paginasi-nomor{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.paginasi [aria-disabled="true"]{opacity:.45;cursor:default}
+.paginasi a.btn{text-decoration:none;color:inherit}
+@media (max-width:560px){.paginasi-nomor{display:none}}

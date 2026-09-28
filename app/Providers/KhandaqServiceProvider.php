@@ -14,6 +14,7 @@ use App\Notifiers\LogNotifier;
 use App\Notifiers\WhatsappNotifier;
 use App\Services\BankMutasiMatcher;
 use App\Services\TabunganService;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 
 /** Daftarkan di bootstrap/providers.php. */
@@ -44,5 +45,12 @@ class KhandaqServiceProvider extends ServiceProvider
         $this->app->singleton(Notifier::class, fn ($app) => config('khandaq.whatsapp.vendor') === 'log'
             ? new LogNotifier()
             : new WhatsappNotifier($app->make(PengirimWa::class)));
+    }
+
+    public function boot(): void
+    {
+        // Paginasi bawaan Laravel memakai kelas Tailwind (tidak dipakai di sini): panahnya tampil raksasa. Pakai tampilan sendiri.
+        Paginator::defaultView('pagination.khandaq');
+        Paginator::defaultSimpleView('pagination.khandaq');
     }
 }

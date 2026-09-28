@@ -47,6 +47,7 @@ return [
         ],
         'webhook_kunci' => env('WA_WEBHOOK_KUNCI'),        // kunci acak di URL webhook ngirimwa
         'template_peringatan' => env('WA_TEMPLATE_PERINGATAN', 'pemberitahuan_wali'),
+        'template_akses' => env('WA_TEMPLATE_AKSES', 'akses_akun'),        // template Meta untuk username & password sementara
         'jeda_detik' => env('WA_JEDA_DETIK', 3),            // jeda antar-nomor saat siaran
     ],
 ];

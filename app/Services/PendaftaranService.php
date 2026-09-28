@@ -58,7 +58,7 @@ class PendaftaranService
     }
 
     /**
-     * @return array{santri: Santri, wali: User, akun_baru: bool, password_awal: ?string}
+     * @return array{santri: Santri, wali: User, akun_baru: bool, password_awal: ?string, dsb: ?\App\Models\Tagihan}
      */
     public function terima(Pendaftaran $p, Kelas $kelas, string $nis, CarbonInterface $jatuhTempoDsb, User $petugas): array
     {
@@ -83,11 +83,12 @@ class PendaftaranService
             $wali = $akun['wali'];
             $password = $akun['password_awal'];
 
-            $this->generator->dsb($santri, $ta, $jatuhTempoDsb);
+            // null bila tarif DSB tahun ajaran tujuan belum diatur; pemanggil wajib memberi tahu petugas.
+            $dsb = $this->generator->dsb($santri, $ta, $jatuhTempoDsb);
             $p->update(['status' => StatusPendaftaran::Diterima, 'santri_id' => $santri->id, 'diproses_oleh' => $petugas->id]);
 
             // Password awal dikirim ke WhatsApp wali oleh pemanggil (jangan disimpan di log).
-            return ['santri' => $santri, 'wali' => $wali, 'akun_baru' => $password !== null, 'password_awal' => $password];
+            return ['santri' => $santri, 'wali' => $wali, 'akun_baru' => $password !== null, 'password_awal' => $password, 'dsb' => $dsb];
         });
     }
 

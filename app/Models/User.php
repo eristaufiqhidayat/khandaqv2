@@ -18,6 +18,9 @@ class User extends Authenticatable
 
     protected $hidden = ['password', 'password_lama', 'remember_token'];
 
+    /** Sama dengan default kolom di database, agar model yang baru dibuat tidak dianggap nonaktif sebelum dimuat ulang. */
+    protected $attributes = ['aktif' => true, 'wajib_ganti_password' => true];
+
     protected function casts(): array
     {
         return [

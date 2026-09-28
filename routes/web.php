@@ -4,10 +4,13 @@ use App\Enums\Izin;
 use App\Http\Controllers\Auth\GantiPasswordController;
 use App\Http\Controllers\Auth\MasukController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\KasirController;
 use App\Http\Controllers\RingkasanController;
 use App\Http\Controllers\SegeraController;
 use App\Http\Controllers\SiaranWaController;
 use App\Http\Controllers\SinkronisasiController;
+use App\Http\Controllers\StatusPembayaranController;
+use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\Wali\PortalController;
 use App\Http\Controllers\WebhookWaController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +39,24 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/ringkasan', RingkasanController::class)->middleware($izin(Izin::LaporanLihat))->name('laporan.ringkasan');
 
+    Route::get('/status-pembayaran', StatusPembayaranController::class)->middleware($izin(Izin::LaporanLihat))->name('laporan.status');
+
+    Route::middleware($izin(Izin::SetoranCatat))->prefix('kasir')->name('kasir.')->group(function () {
+        Route::get('/', [KasirController::class, 'index'])->name('index');
+        Route::post('/{santri}/setor', [KasirController::class, 'setor'])->name('setor');
+        Route::post('/{santri}/tarik', [KasirController::class, 'tarik'])->name('tarik');
+        Route::post('/{santri}/bayar/{tagihan}', [KasirController::class, 'bayar'])->name('bayar');
+    });
+
+    Route::get('/bukti-setoran/{mutasi}', [VerifikasiController::class, 'bukti'])->name('setoran.bukti');
+    Route::middleware($izin(Izin::SetoranVerifikasi))->prefix('verifikasi')->name('verifikasi.')->group(function () {
+        Route::get('/', [VerifikasiController::class, 'index'])->name('index');
+        Route::post('/setoran/{mutasi}', [VerifikasiController::class, 'verifikasi'])->name('setoran');
+        Route::post('/setoran/{mutasi}/tolak', [VerifikasiController::class, 'tolak'])->name('tolak');
+        Route::post('/bank/{bank}/terima', [VerifikasiController::class, 'terima'])->name('terima');
+        Route::post('/bank/{bank}/abaikan', [VerifikasiController::class, 'abaikan'])->name('abaikan');
+    });
+
     Route::middleware($izin(Izin::WaSiaran))->prefix('siaran')->name('siaran.')->group(function () {
         Route::get('/', [SiaranWaController::class, 'index'])->name('index');
         Route::post('/pratinjau', [SiaranWaController::class, 'pratinjau'])->name('pratinjau');
@@ -53,9 +74,6 @@ Route::middleware('auth')->group(function () {
 
     // Menu yang layarnya belum dibuat: route & izin sudah aktif, isinya halaman "sedang dibangun".
     foreach ([
-        ['status-pembayaran', 'laporan.status', Izin::LaporanLihat],
-        ['kasir', 'kasir.index', Izin::SetoranCatat],
-        ['verifikasi', 'verifikasi.index', Izin::SetoranVerifikasi],
         ['pendaftaran', 'pendaftaran.index', Izin::PendaftaranProses],
         ['santri', 'santri.index', Izin::SantriKelola],
         ['raport', 'raport.index', Izin::RaportUnggah],

@@ -36,6 +36,11 @@ class TabunganMutasi extends Model
         return $this->belongsTo(Santri::class);
     }
 
+    public function pencatat(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dicatat_oleh');
+    }
+
     public function tagihan(): BelongsTo
     {
         return $this->belongsTo(Tagihan::class);

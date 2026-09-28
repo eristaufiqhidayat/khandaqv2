@@ -11,6 +11,19 @@ return [
     // Batas penarikan uang saku tunai per santri per hari (rupiah). 0 = tanpa batas.
     'batas_tarik_harian' => env('KHANDAQ_BATAS_TARIK_HARIAN', 0),
 
+    // Format CSV mutasi dari BSI (Net/CMS). Judul kolom di file -> nama kolom baku. Bisa juga diubah di layar impor.
+    'bsi' => [
+        'kolom' => [
+            'tanggal' => env('BSI_KOLOM_TANGGAL', 'tanggal'),
+            'no_referensi' => env('BSI_KOLOM_REFERENSI', 'no_referensi'),
+            'deskripsi' => env('BSI_KOLOM_DESKRIPSI', 'deskripsi'),
+            'debet' => env('BSI_KOLOM_DEBET', 'debet'),
+            'kredit' => env('BSI_KOLOM_KREDIT', 'kredit'),
+            'saldo' => env('BSI_KOLOM_SALDO', 'saldo'),
+        ],
+        'format_tanggal' => env('BSI_FORMAT_TANGGAL', 'd/m/Y H:i'),
+    ],
+
     // Toleransi selisih tanggal antara laporan setoran wali dan mutasi BSI.
     'toleransi_hari_bank' => env('KHANDAQ_TOLERANSI_HARI_BANK', 2),
 

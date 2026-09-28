@@ -7,6 +7,7 @@ use App\Exceptions\PeriodeTerkunci;
 use Carbon\CarbonImmutable;
 use App\Models\Concerns\DicatatAudit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TutupBuku extends Model
 {
@@ -19,6 +20,11 @@ class TutupBuku extends Model
     protected function casts(): array
     {
         return ['bulan' => Tanggal::class, 'saldo_rekening' => 'array', 'saldo_titipan' => 'integer'];
+    }
+
+    public function petugas(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ditutup_oleh');
     }
 
     /** Akhir bulan terakhir yang sudah ditutup, atau null. */

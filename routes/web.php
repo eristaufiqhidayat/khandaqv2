@@ -3,13 +3,17 @@
 use App\Enums\Izin;
 use App\Http\Controllers\Auth\GantiPasswordController;
 use App\Http\Controllers\Auth\MasukController;
+use App\Http\Controllers\BankImporController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\KasirController;
+use App\Http\Controllers\PersetujuanController;
 use App\Http\Controllers\RingkasanController;
 use App\Http\Controllers\SegeraController;
 use App\Http\Controllers\SiaranWaController;
 use App\Http\Controllers\SinkronisasiController;
 use App\Http\Controllers\StatusPembayaranController;
+use App\Http\Controllers\TunggakanController;
+use App\Http\Controllers\TutupBukuController;
 use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\Wali\PortalController;
 use App\Http\Controllers\WebhookWaController;
@@ -57,6 +61,28 @@ Route::middleware('auth')->group(function () {
         Route::post('/bank/{bank}/abaikan', [VerifikasiController::class, 'abaikan'])->name('abaikan');
     });
 
+    Route::middleware($izin(Izin::KeringananSetujui))->prefix('persetujuan')->name('persetujuan.')->group(function () {
+        Route::get('/', [PersetujuanController::class, 'index'])->name('index');
+        Route::post('/{keringanan}/setujui', [PersetujuanController::class, 'setujui'])->name('setujui');
+        Route::post('/{keringanan}/tolak', [PersetujuanController::class, 'tolak'])->name('tolak');
+        Route::get('/{keringanan}/lampiran', [PersetujuanController::class, 'lampiran'])->name('lampiran');
+    });
+
+    Route::middleware($izin(Izin::TunggakanPutuskan))->prefix('tunggakan')->name('tunggakan.')->group(function () {
+        Route::get('/', [TunggakanController::class, 'index'])->name('index');
+        Route::post('/{peringatan}/putuskan', [TunggakanController::class, 'putuskan'])->name('putuskan');
+    });
+
+    Route::middleware($izin(Izin::BankImpor))->prefix('bank')->name('bank.')->group(function () {
+        Route::get('/', [BankImporController::class, 'index'])->name('index');
+        Route::post('/', [BankImporController::class, 'store'])->name('store');
+    });
+
+    Route::middleware($izin(Izin::TutupBuku))->prefix('tutup-buku')->name('tutupbuku.')->group(function () {
+        Route::get('/', [TutupBukuController::class, 'index'])->name('index');
+        Route::post('/', [TutupBukuController::class, 'store'])->name('store');
+    });
+
     Route::middleware($izin(Izin::WaSiaran))->prefix('siaran')->name('siaran.')->group(function () {
         Route::get('/', [SiaranWaController::class, 'index'])->name('index');
         Route::post('/pratinjau', [SiaranWaController::class, 'pratinjau'])->name('pratinjau');
@@ -78,11 +104,7 @@ Route::middleware('auth')->group(function () {
         ['pendaftaran', 'pendaftaran.index', Izin::PendaftaranProses],
         ['santri', 'santri.index', Izin::SantriKelola],
         ['raport', 'raport.index', Izin::RaportUnggah],
-        ['persetujuan', 'persetujuan.index', Izin::KeringananSetujui],
-        ['bank', 'bank.index', Izin::BankImpor],
-        ['tunggakan', 'tunggakan.index', Izin::TunggakanPutuskan],
         ['pengeluaran', 'pengeluaran.index', Izin::PengeluaranCatat],
-        ['tutup-buku', 'tutupbuku.index', Izin::TutupBuku],
         ['tarif', 'tarif.index', Izin::TarifKelola],
         ['potongan', 'potongan.index', Izin::PengecualianKelola],
         ['periode', 'periode.index', Izin::PeriodeKelola],

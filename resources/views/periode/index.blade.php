@@ -7,7 +7,7 @@
   <div class="card"><div class="card-h"><h2>Tahun ajaran</h2></div><div class="tw"><table><thead><tr><th>Semester</th><th>Rentang</th><th></th></tr></thead><tbody>
   @foreach ($daftarTa as $ta)
     @foreach ($ta->semester as $s)
-      <tr><td>{{ $s->nama }}</td><td class="num">{{ $s->mulai->translatedFormat('d M Y') }} – {{ $s->selesai->translatedFormat('d M Y') }}</td>
+      <tr><td>{{ $s->label }}</td><td class="num">{{ $s->mulai->translatedFormat('d M Y') }} – {{ $s->selesai->translatedFormat('d M Y') }}</td>
         <td class="r">@if ($s->aktif)<span class="chip c-good">Aktif</span>@else<form method="post" action="{{ route('periode.aktifkan', $s) }}" onsubmit="return confirm('Jadikan {{ $s->nama }} semester aktif?')">@csrf<button class="btn sm">Aktifkan</button></form>@endif</td></tr>
     @endforeach
   @endforeach

@@ -5,6 +5,7 @@ namespace App\Services\Migrasi;
 use App\Enums\Izin;
 use App\Exceptions\AturanDilanggar;
 use App\Models\MigrasiRun;
+use App\Models\Semester;
 use App\Models\TutupBuku;
 use App\Models\User;
 use App\Services\AkunService;
@@ -238,7 +239,8 @@ class MigrasiDataLama
             $nomor = strtolower((string) $r->semester) === 'genap' ? 2 : 1;
             [$semId, $mulai] = $this->semByTaNomor["{$ta}|{$nomor}"];
             DB::table('semester')->where('id', $semId)->update([
-                'nama' => trim((string) $r->nama_semester) ?: "Semester {$nomor}",
+                // Nama di data lama tidak seragam ("Semester 1", "semester 1", "Semester II") dan tanpa tahun: pakai nama baku.
+                'nama' => Semester::namaBaku($nomor, $m[1].'/'.$m[2]),
                 'aktif' => $r->status_aktif === 'yes', 'legacy_id_periode' => $r->id_periode,
             ]);
             if ($r->status_aktif === 'yes') {
@@ -849,7 +851,7 @@ class MigrasiDataLama
         $id = DB::table('tahun_ajaran')->insertGetId(['nama' => $tahun.'/'.($tahun + 1), 'tahun_mulai' => $tahun,
             'mulai' => "{$tahun}-07-01", 'selesai' => ($tahun + 1).'-06-30', 'aktif' => false, 'created_at' => $this->now, 'updated_at' => $this->now]);
         foreach ([1 => ["{$tahun}-07-01", "{$tahun}-12-31"], 2 => [($tahun + 1).'-01-01', ($tahun + 1).'-06-30']] as $n => [$a, $b]) {
-            $sem = DB::table('semester')->insertGetId(['tahun_ajaran_id' => $id, 'nomor' => $n, 'nama' => "Semester {$n} {$tahun}/".($tahun + 1),
+            $sem = DB::table('semester')->insertGetId(['tahun_ajaran_id' => $id, 'nomor' => $n, 'nama' => Semester::namaBaku($n, $tahun.'/'.($tahun + 1)),
                 'mulai' => $a, 'selesai' => $b, 'aktif' => false, 'created_at' => $this->now, 'updated_at' => $this->now]);
             $this->semByTaNomor["{$id}|{$n}"] = [$sem, $a];
         }

@@ -17,6 +17,8 @@ class SinkronisasiController extends Controller
 {
     public function index()
     {
+        MigrasiRun::bersihkanYangMacet();
+
         return view('sinkronisasi.index', [
             'riwayat' => MigrasiRun::latest()->limit(10)->get(),
             'mode' => config('khandaq.mode'),
@@ -29,6 +31,7 @@ class SinkronisasiController extends Controller
         $svc = new MigrasiDataLama(config('khandaq.koneksi_lama'), config('khandaq.mode'));
         $svc->pastikanBoleh($request->user()); // tolak lebih awal: izin, mode produksi, sudah tutup buku
 
+        MigrasiRun::bersihkanYangMacet();
         if (MigrasiRun::whereIn('status', ['antri', 'berjalan'])->exists()) {
             return response()->json(['pesan' => 'Sinkronisasi lain sedang berjalan.'], 409);
         }
@@ -43,5 +46,13 @@ class SinkronisasiController extends Controller
         abort_unless(request()->user()->hasPermissionTo(Izin::MigrasiJalankan->value), 403);
 
         return response()->json($run->only(['id', 'status', 'tahap', 'persen', 'ringkasan', 'rekonsiliasi', 'galat', 'mulai_pada', 'selesai_pada']));
+    }
+
+    /** Admin menghentikan catatan proses yang macet (mis. pekerja antrean belum dijalankan) agar bisa mengulang. */
+    public function batal(Request $request, MigrasiRun $run)
+    {
+        $run->batalkan('Dibatalkan oleh '.$request->user()->name.'.');
+
+        return redirect()->route('sinkronisasi.index')->with('status', 'Proses sinkronisasi dibatalkan. Tombol bisa dipakai lagi.');
     }
 }

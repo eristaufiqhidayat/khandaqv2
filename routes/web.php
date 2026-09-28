@@ -70,6 +70,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [SinkronisasiController::class, 'index'])->name('index');
         Route::post('/', [SinkronisasiController::class, 'store'])->name('store');
         Route::get('/{run}', [SinkronisasiController::class, 'show'])->name('show');
+        Route::post('/{run}/batal', [SinkronisasiController::class, 'batal'])->name('batal');
     });
 
     // Menu yang layarnya belum dibuat: route & izin sudah aktif, isinya halaman "sedang dibangun".

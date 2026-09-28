@@ -2,6 +2,18 @@
 @section('judul', 'Sinkronisasi data lama')
 @section('halaman')
 <div class="top"><div><h1>Sinkronisasi data lama</h1><p class="muted">Menyalin semua data dari aplikasi lama ke aplikasi baru dan mengganti salinan sebelumnya. Dipakai selama masa paralel.</p></div></div>
+@php($aktif = $riwayat->first(fn ($r) => $r->aktif()))
+@if ($aktif)
+  <div class="card stack" style="margin-bottom:16px">
+    <div class="card-h" style="margin:0"><h2>{{ $aktif->status === 'antri' ? 'Menunggu diproses' : 'Sedang berjalan' }}</h2><span class="hint">{{ $aktif->tahap ?? 'Belum dimulai' }} · {{ $aktif->persen ?? 0 }}%</span></div>
+    @if ($aktif->menungguPekerja())
+      <div class="note warn"><b>Belum diproses sejak {{ $aktif->created_at->diffForHumans() }}.</b> Pekerja antrean belum berjalan. Di server jalankan
+        <code>php artisan queue:work --stop-when-empty --timeout=1800</code>, atau batalkan lalu ulangi setelah pekerja antrean aktif.</div>
+    @endif
+    <form method="post" action="{{ route('sinkronisasi.batal', $aktif) }}" onsubmit="return confirm('Batalkan proses ini? Bila ternyata masih berjalan, hasilnya tetap bisa selesai sendiri.')">@csrf<button class="btn d">Batalkan proses</button></form>
+  </div>
+  <script>setTimeout(() => location.reload(), 5000)</script>
+@endif
 @if ($mode !== 'paralel')
   <div class="alert err">Aplikasi sudah mode produksi. Sinkronisasi terkunci.</div>
 @else

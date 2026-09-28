@@ -5,13 +5,20 @@ use App\Http\Controllers\Auth\GantiPasswordController;
 use App\Http\Controllers\Auth\MasukController;
 use App\Http\Controllers\BankImporController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\TarifController;
+use App\Http\Controllers\PotonganController;
+use App\Http\Controllers\PeriodeController;
+use App\Http\Controllers\PengeluaranController;
+use App\Http\Controllers\PenggunaController;
+use App\Http\Controllers\MasterKeuanganController;
+use App\Http\Controllers\KenaikanController;
+use App\Http\Controllers\HakAksesController;
 use App\Http\Controllers\KasirController;
 use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\PersetujuanController;
 use App\Http\Controllers\RaportController;
 use App\Http\Controllers\RingkasanController;
 use App\Http\Controllers\SantriController;
-use App\Http\Controllers\SegeraController;
 use App\Http\Controllers\SiaranWaController;
 use App\Http\Controllers\SinkronisasiController;
 use App\Http\Controllers\StatusPembayaranController;
@@ -99,6 +106,59 @@ Route::middleware('auth')->group(function () {
     });
     Route::post('/raport/santri/{santri}/dispensasi', [RaportController::class, 'dispensasi'])->middleware($izin(Izin::KeringananAjukan))->name('raport.dispensasi');
 
+    Route::middleware($izin(Izin::TarifKelola))->prefix('tarif')->name('tarif.')->group(function () {
+        Route::get('/', [TarifController::class, 'index'])->name('index');
+        Route::post('/', [TarifController::class, 'store'])->name('store');
+        Route::delete('/{tarif}', [TarifController::class, 'destroy'])->name('destroy');
+        Route::post('/salin/{ta}', [TarifController::class, 'salin'])->name('salin');
+    });
+
+    Route::middleware($izin(Izin::PengecualianKelola))->prefix('potongan')->name('potongan.')->group(function () {
+        Route::get('/', [PotonganController::class, 'index'])->name('index');
+        Route::post('/kecualikan', [PotonganController::class, 'kecualikan'])->name('kecualikan');
+        Route::post('/jeda', [PotonganController::class, 'jeda'])->name('jeda');
+        Route::post('/{pengecualian}/akhiri', [PotonganController::class, 'akhiri'])->name('akhiri');
+    });
+
+    Route::middleware($izin(Izin::PeriodeKelola))->prefix('periode')->name('periode.')->group(function () {
+        Route::get('/', [PeriodeController::class, 'index'])->name('index');
+        Route::post('/semester/{semester}/aktifkan', [PeriodeController::class, 'aktifkan'])->name('aktifkan');
+        Route::post('/siapkan', [PeriodeController::class, 'siapkan'])->name('siapkan');
+        Route::post('/kelas', [PeriodeController::class, 'kelasStore'])->name('kelas.store');
+        Route::post('/kelas/{kelas}/aktif', [PeriodeController::class, 'kelasToggle'])->name('kelas.toggle');
+    });
+
+    Route::middleware($izin(Izin::SantriKelola))->prefix('kenaikan-kelas')->name('kenaikan.')->group(function () {
+        Route::get('/', [KenaikanController::class, 'index'])->name('index');
+        Route::post('/', [KenaikanController::class, 'store'])->name('store');
+    });
+
+    Route::middleware($izin(Izin::PenggunaKelola))->prefix('pengguna')->name('pengguna.')->group(function () {
+        Route::get('/', [PenggunaController::class, 'index'])->name('index');
+        Route::post('/', [PenggunaController::class, 'store'])->name('store');
+        Route::post('/{user}/peran', [PenggunaController::class, 'peran'])->name('peran');
+        Route::post('/{user}/reset', [PenggunaController::class, 'reset'])->name('reset');
+        Route::post('/{user}/aktif', [PenggunaController::class, 'aktif'])->name('aktif');
+    });
+
+    Route::middleware($izin(Izin::HakAksesKelola))->prefix('hak-akses')->name('hakakses.')->group(function () {
+        Route::get('/', [HakAksesController::class, 'index'])->name('index');
+        Route::post('/', [HakAksesController::class, 'update'])->name('update');
+    });
+
+    Route::middleware($izin(Izin::PengeluaranCatat))->prefix('pengeluaran')->name('pengeluaran.')->group(function () {
+        Route::get('/', [PengeluaranController::class, 'index'])->name('index');
+        Route::post('/', [PengeluaranController::class, 'store'])->name('store');
+        Route::delete('/{pengeluaran}', [PengeluaranController::class, 'destroy'])->name('destroy');
+        Route::get('/{pengeluaran}/bukti', [PengeluaranController::class, 'bukti'])->name('bukti');
+    });
+
+    Route::middleware($izin(Izin::MasterKeuanganKelola))->prefix('master-keuangan')->name('masterkeu.')->group(function () {
+        Route::get('/', [MasterKeuanganController::class, 'index'])->name('index');
+        Route::post('/{jenis}', [MasterKeuanganController::class, 'store'])->whereIn('jenis', ['rekening', 'akun', 'pengusul'])->name('store');
+        Route::put('/{jenis}/{id}', [MasterKeuanganController::class, 'update'])->whereIn('jenis', ['rekening', 'akun', 'pengusul'])->name('update');
+    });
+
     Route::middleware($izin(Izin::KeringananSetujui))->prefix('persetujuan')->name('persetujuan.')->group(function () {
         Route::get('/', [PersetujuanController::class, 'index'])->name('index');
         Route::post('/{keringanan}/setujui', [PersetujuanController::class, 'setujui'])->name('setujui');
@@ -137,18 +197,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/{run}/batal', [SinkronisasiController::class, 'batal'])->name('batal');
     });
 
-    // Menu yang layarnya belum dibuat: route & izin sudah aktif, isinya halaman "sedang dibangun".
-    foreach ([
-        ['pengeluaran', 'pengeluaran.index', Izin::PengeluaranCatat],
-        ['tarif', 'tarif.index', Izin::TarifKelola],
-        ['potongan', 'potongan.index', Izin::PengecualianKelola],
-        ['periode', 'periode.index', Izin::PeriodeKelola],
-        ['master-keuangan', 'masterkeu.index', Izin::MasterKeuanganKelola],
-        ['pengguna', 'pengguna.index', Izin::PenggunaKelola],
-        ['hak-akses', 'hakakses.index', Izin::HakAksesKelola],
-    ] as [$uri, $nama, $i]) {
-        Route::get('/'.$uri, SegeraController::class)->middleware($izin($i))->name($nama);
-    }
 });
 
 // Webhook gateway WhatsApp: tanpa login, dikecualikan dari CSRF (bootstrap/app.php).

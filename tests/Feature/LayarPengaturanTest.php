@@ -174,4 +174,40 @@ class LayarPengaturanTest extends KhandaqTestCase
             $this->get(route($r))->assertOk()->assertDontSee('sedang dibangun');
         }
     }
+
+    public function test_tab_wali_di_layar_pengguna(): void
+    {
+        $anak = $this->santri('3 PUTRA');
+        $w = $this->wali($anak)->assignRole('wali_santri');
+        $w->update(['name' => 'Bapak Fulan', 'username' => 'fulan', 'telepon' => '081299990001']);
+        $tanpa = $this->wali($this->santri('1 PUTRA'))->assignRole('wali_santri');
+        $tanpa->update(['name' => 'Ibu Tanpa Nomor', 'telepon' => null]);
+
+        // Admin: kedua tab tampil, tab wali hanya baca (reset/nonaktif milik Admin Office).
+        $admin = $this->staf('admin', 'admin');
+        $this->actingAs($admin)->get(route('pengguna.index'))->assertOk()->assertSee('Tambah staf')->assertDontSee('Bapak Fulan');
+        $this->get(route('pengguna.index', ['tab' => 'wali']))->assertOk()
+            ->assertSee('Bapak Fulan')->assertSee($anak->nama)->assertSee('Ibu Tanpa Nomor')->assertDontSee('Tambah staf')
+            ->assertSee('bawaan: Admin Office');
+        $this->get(route('pengguna.index', ['tab' => 'wali', 'q' => $anak->nama]))->assertSee('Bapak Fulan')->assertDontSee('Ibu Tanpa Nomor');
+        $this->get(route('pengguna.index', ['tab' => 'wali', 'status' => 'tanpa_wa']))->assertSee('Ibu Tanpa Nomor')->assertDontSee('Bapak Fulan');
+        $this->post(route('pengguna.wali.aktif', $w))->assertForbidden();
+        // Aksi tab Staf tidak bisa dipakai pada akun wali (mis. menjadikan wali admin).
+        $this->post(route('pengguna.peran', $w), ['peran' => 'admin'])->assertNotFound();
+        $this->assertFalse($w->fresh()->hasRole('admin'));
+
+        // Admin Office: menu Pengguna tampil, langsung tab wali, tanpa tab staf; bisa nonaktifkan & reset.
+        $office = $this->staf('admin_office', 'office');
+        $this->actingAs($office)->get(route('pengguna.index'))->assertOk()->assertSee('Bapak Fulan')->assertDontSee('Tambah staf');
+        $this->assertContains('pengguna.index', array_column(\App\Support\MenuStaf::untuk($office), 'route'));
+        $this->post(route('pengguna.store'), [])->assertForbidden();
+        $this->post(route('pengguna.wali.aktif', $w))->assertSessionHas('status');
+        $this->assertFalse($w->fresh()->aktif);
+        $this->post(route('pengguna.wali.reset', $w))->assertSessionHas('status');
+        $this->assertTrue($w->fresh()->wajib_ganti_password);
+        $this->post(route('pengguna.wali.aktif', $admin))->assertNotFound();
+
+        // Keuangan tidak punya kedua izin.
+        $this->actingAs($this->staf('keuangan', 'keu'))->get(route('pengguna.index'))->assertForbidden();
+    }
 }

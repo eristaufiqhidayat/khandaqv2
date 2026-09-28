@@ -621,37 +621,40 @@ class MigrasiDataLama
 
     private function raport(): void
     {
-        $total = 0;
+        // Kolom `image` berisi PDF asli (bisa beberapa MB per baris). Membaca 100 baris sekaligus membuat PHP
+        // kehabisan memori (driver MySQL menampung seluruh hasil query di memori PHP). Maka: baca metadata
+        // dulu tanpa file, lalu ambil file satu per satu hanya untuk raport yang benar-benar disalin.
+        $meta = $this->lama->table('tbl_nilai_akhir')
+            ->orderByDesc('id_nilai') // terbaru dulu: bila ganda untuk santri/semester/jenis yang sama, yang terbaru dipakai
+            ->get(['id_nilai', 'id_siswa', 'id_periode', 'keterangan', 'mime']);
         $sudah = [];
-        // Terbaru dulu: bila ada ganda untuk santri/semester/jenis yang sama, yang terbaru dipakai.
-        $this->lama->table('tbl_nilai_akhir')->orderByDesc('id_nilai')->chunk(100, function ($rows) use (&$total, &$sudah) {
-            foreach ($rows as $r) {
-                $total++;
-                $s = $this->santriMap[(int) $r->id_siswa] ?? null;
-                $sem = $this->semByPeriode[(int) $r->id_periode] ?? null;
-                $ket = strtoupper((string) $r->keterangan);
-                $jenis = str_contains($ket, 'TENGAH') ? 'pts' : (str_contains($ket, 'TAHUN') ? 'pat' : (str_contains($ket, 'AKHIR') ? 'pas' : null));
-                if (! $s || ! $sem || ! $jenis) {
-                    $this->lewati('tbl_nilai_akhir', 'santri/periode/jenis raport tidak dikenal');
+        foreach ($meta as $r) {
+            $s = $this->santriMap[(int) $r->id_siswa] ?? null;
+            $sem = $this->semByPeriode[(int) $r->id_periode] ?? null;
+            $ket = strtoupper((string) $r->keterangan);
+            $jenis = str_contains($ket, 'TENGAH') ? 'pts' : (str_contains($ket, 'TAHUN') ? 'pat' : (str_contains($ket, 'AKHIR') ? 'pas' : null));
+            if (! $s || ! $sem || ! $jenis) {
+                $this->lewati('tbl_nilai_akhir', 'santri/periode/jenis raport tidak dikenal');
 
-                    continue;
-                }
-                if (isset($sudah["{$s}|{$sem[0]}|{$jenis}"])) {
-                    $this->lewati('tbl_nilai_akhir', 'raport ganda (dipakai yang terbaru)');
-
-                    continue;
-                }
-                $sudah["{$s}|{$sem[0]}|{$jenis}"] = true;
-                $ext = str_contains((string) $r->mime, 'pdf') ? 'pdf' : (str_contains((string) $r->mime, 'png') ? 'png' : (str_contains((string) $r->mime, 'jp') ? 'jpg' : 'pdf'));
-                $path = "raport/legacy/{$r->id_nilai}.{$ext}";
-                ($this->simpanFile)($path, (string) $r->image);
-                DB::table('raport')->insert(['santri_id' => $s, 'semester_id' => $sem[0], 'jenis' => $jenis, 'file_path' => $path,
-                    'mime' => $r->mime ?: 'application/pdf', 'diterbitkan_pada' => $this->now, 'diunggah_oleh' => $this->adminId,
-                    'legacy_id_nilai' => $r->id_nilai, 'created_at' => $this->now, 'updated_at' => $this->now]);
-                $this->masuk('tbl_nilai_akhir');
+                continue;
             }
-        });
-        $this->sumber('tbl_nilai_akhir', $total);
+            if (isset($sudah["{$s}|{$sem[0]}|{$jenis}"])) {
+                $this->lewati('tbl_nilai_akhir', 'raport ganda (dipakai yang terbaru)');
+
+                continue;
+            }
+            $sudah["{$s}|{$sem[0]}|{$jenis}"] = true;
+            $ext = str_contains((string) $r->mime, 'pdf') ? 'pdf' : (str_contains((string) $r->mime, 'png') ? 'png' : (str_contains((string) $r->mime, 'jp') ? 'jpg' : 'pdf'));
+            $path = "raport/legacy/{$r->id_nilai}.{$ext}";
+            $isi = (string) $this->lama->table('tbl_nilai_akhir')->where('id_nilai', $r->id_nilai)->value('image');
+            ($this->simpanFile)($path, $isi);
+            unset($isi);
+            DB::table('raport')->insert(['santri_id' => $s, 'semester_id' => $sem[0], 'jenis' => $jenis, 'file_path' => $path,
+                'mime' => $r->mime ?: 'application/pdf', 'diterbitkan_pada' => $this->now, 'diunggah_oleh' => $this->adminId,
+                'legacy_id_nilai' => $r->id_nilai, 'created_at' => $this->now, 'updated_at' => $this->now]);
+            $this->masuk('tbl_nilai_akhir');
+        }
+        $this->sumber('tbl_nilai_akhir', $meta->count());
     }
 
     /** Saldo per santri: cara hitung aplikasi lama vs ledger baru. */

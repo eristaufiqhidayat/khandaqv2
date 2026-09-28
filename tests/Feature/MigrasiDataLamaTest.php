@@ -21,10 +21,16 @@ class MigrasiDataLamaTest extends KhandaqTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        if (! is_file(self::DB_LAMA) || ! function_exists('lab_koneksi_lama')) {
-            $this->markTestSkipped('Salinan database lama tidak tersedia (tes ini untuk lingkungan lab).');
+        $path = getenv('KHANDAQ_DB_LAMA_UJI') ?: self::DB_LAMA;
+        if (! is_file($path)) {
+            $this->markTestSkipped('Salinan database lama (SQLite) tidak tersedia. Isi KHANDAQ_DB_LAMA_UJI untuk menjalankan tes ini.');
         }
-        lab_koneksi_lama(self::DB_LAMA);
+        if (function_exists('lab_koneksi_lama')) {
+            lab_koneksi_lama($path);
+        } else {
+            config(['database.connections.lama' => ['driver' => 'sqlite', 'database' => $path, 'prefix' => '', 'foreign_key_constraints' => false]]);
+            \Illuminate\Support\Facades\DB::purge('lama');
+        }
     }
 
     private function jalankan(?string $loginLama = null): array
@@ -62,7 +68,7 @@ class MigrasiDataLamaTest extends KhandaqTestCase
     public function test_password_wali_dari_database_login_lama_ikut_terbawa(): void
     {
         // Tiruan lembaha1_igni399.users (Myth/Auth). Username wali = data_orangtua.username.
-        $ids = (new \PDO('sqlite:'.self::DB_LAMA))->query('SELECT id_orangtua, username FROM data_orangtua ORDER BY id_orangtua LIMIT 3')->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $ids = (new \PDO('sqlite:'.(getenv('KHANDAQ_DB_LAMA_UJI') ?: self::DB_LAMA)))->query('SELECT id_orangtua, username FROM data_orangtua ORDER BY id_orangtua LIMIT 3')->fetchAll(\PDO::FETCH_KEY_PAIR);
         [$id1, $id2, $id3] = array_keys($ids);
         $myth = fn (string $pw) => password_hash(base64_encode(hash('sha384', $pw, true)), PASSWORD_DEFAULT);
         $path = sys_get_temp_dir().'/login_lama_'.uniqid().'.db';
@@ -73,7 +79,12 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $ins->execute([$ids[$id2], $myth('lama456'), 0, '1', null]);                // akun nonaktif: tidak dibawa
         $ins->execute([$ids[$id3], $myth('staf789'), 1, null, null]);              // bukan akun orang tua
         $ins->execute(['wali_tanpa_data', $myth('x'), 1, '1', null]);
-        $GLOBALS['lab_capsule']->addConnection(['driver' => 'sqlite', 'database' => $path, 'prefix' => ''], 'login_lama');
+        if (isset($GLOBALS['lab_capsule'])) {
+            $GLOBALS['lab_capsule']->addConnection(['driver' => 'sqlite', 'database' => $path, 'prefix' => ''], 'login_lama');
+        } else {
+            config(['database.connections.login_lama' => ['driver' => 'sqlite', 'database' => $path, 'prefix' => '']]);
+            \Illuminate\Support\Facades\DB::purge('login_lama');
+        }
 
         [$run] = $this->jalankan('login_lama');
 

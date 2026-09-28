@@ -12,6 +12,20 @@
 <div class="grid g2" style="align-items:start">
   <div class="stack">
     <div class="card">
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        @include('santri._foto', ['s' => $santri, 'ukuran' => 'lg'])
+        <div class="stack" style="flex:1;min-width:220px">
+          <form method="post" action="{{ route('santri.foto.simpan', $santri) }}" enctype="multipart/form-data" class="form-baris">@csrf
+            <div class="field" style="flex:1"><label for="foto">{{ $santri->foto ? 'Ganti foto' : 'Unggah foto' }}</label>
+              <input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required></div>
+            <div><button class="btn p">Simpan foto</button></div>
+          </form>
+          <p class="hint">JPG/PNG/WebP, maks. 8 MB. Diperkecil otomatis; tampil juga di portal wali.</p>
+          @if ($santri->foto)<form method="post" action="{{ route('santri.foto.hapus', $santri) }}" onsubmit="return confirm('Hapus foto {{ addslashes($santri->nama) }}?')">@csrf<button class="btn sm d">Hapus foto</button></form>@endif
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-h"><h2>Biodata</h2><div style="text-align:right"><div class="eyebrow">Saldo</div><div class="rp" style="font-weight:700">{{ $rp($saldo) }}</div></div></div>
       <div class="tw"><table><tbody>
         <tr><td class="hint">Jenis kelamin</td><td>{{ ucfirst($santri->jenis_kelamin) }}</td></tr>

@@ -23,7 +23,7 @@ use Throwable;
  *
  * Urutan: kosongkan -> periode -> kelas -> santri -> wali -> riwayat kelas -> akun/pengusul -> tarif
  *         -> beasiswa -> buku tabungan (+ tagihan per potongan) -> tabel samping (DSB, DU, PTS, PAS,
- *         laundry, buku) -> pengeluaran -> mutasi BSI -> raport -> rekonsiliasi saldo.
+ *         laundry, buku) -> pengeluaran -> mutasi BSI -> raport -> foto santri -> rekonsiliasi saldo.
  *
  * Aturan penting:
  *  - Buku tabungan (tbl_tabungan_transaksi) adalah sumber utama: setiap baris menjadi satu baris
@@ -112,7 +112,7 @@ class MigrasiDataLama
             'Santri' => 'santri', 'Wali & akun portal' => 'wali', 'Riwayat kelas' => 'riwayatKelas',
             'Akun biaya & pengusul' => 'akunPengusul', 'Tarif' => 'tarif', 'Beasiswa' => 'beasiswa',
             'Buku tabungan' => 'tabungan', 'DSB, Daftar Ulang, PTS, PAS, laundry, buku' => 'tabelSamping',
-            'Pengeluaran per dana' => 'pengeluaran', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport',
+            'Pengeluaran per dana' => 'pengeluaran', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport', 'Foto santri' => 'fotoSantri',
         ];
         try {
             DB::transaction(function () use ($tahap) {
@@ -727,6 +727,36 @@ class MigrasiDataLama
             $this->masuk('tbl_nilai_akhir');
         }
         $this->sumber('tbl_nilai_akhir', $meta->count());
+    }
+
+    /**
+     * Foto santri: data_siswa.image (BLOB berisi teks base64) disalin menjadi FILE foto-santri/lama-<id_siswa>.jpg,
+     * santri.foto menyimpan path-nya. Satu foto per query (lihat raport) dan diperkecil agar hemat memori & disk.
+     * Nama file tetap per id lama, sehingga sinkron ulang menimpa file yang sama (tidak menumpuk).
+     */
+    private function fotoSantri(): void
+    {
+        $ada = 0;
+        foreach ($this->santriMap as $idLama => $santriId) {
+            $mentah = $this->lama->table('data_siswa')->where('id_siswa', $idLama)->value('image');
+            if ($mentah === null || trim((string) $mentah) === '') {
+                continue;
+            }
+            $ada++;
+            $foto = \App\Support\FotoSantri::dariLama((string) $mentah);
+            unset($mentah);
+            if (! $foto) {
+                $this->lewati('data_siswa.image', 'isi kolom image bukan gambar JPG/PNG/GIF/WebP');
+
+                continue;
+            }
+            $path = \App\Support\FotoSantri::FOLDER."/lama-{$idLama}.{$foto[1]}";
+            ($this->simpanFile)($path, $foto[0]);
+            unset($foto);
+            DB::table('santri')->where('id', $santriId)->update(['foto' => $path]);
+            $this->masuk('data_siswa.image');
+        }
+        $this->sumber('data_siswa.image', $ada);
     }
 
     /** Saldo per santri: cara hitung aplikasi lama vs ledger baru. */

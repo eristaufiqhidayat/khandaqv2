@@ -26,7 +26,7 @@
       <div>
         <h3 style="margin-bottom:6px">Raport</h3>
         @forelse ($a['raport'] as $r)
-          <div class="ph-line"><span>{{ strtoupper($r['raport']->jenis) }} · {{ $r['raport']->semester->nama }}</span>
+          <div class="ph-line"><span>{{ strtoupper($r['raport']->jenis) }} · {{ $r['raport']->semester->label }}</span>
           @if ($r['terkunci'])<span class="chip c-crit" title="{{ $r['terkunci'] }}">Tertahan</span>@else<a class="btn sm" href="{{ route('raport.lihat', $r['raport']) }}" target="_blank" rel="noopener">Buka PDF</a>@endif</div>
           @if ($r['terkunci'])<p class="hint">{{ $r['terkunci'] }}</p>@endif
         @empty <p class="hint">Belum ada raport yang diterbitkan.</p> @endforelse

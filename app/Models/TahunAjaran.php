@@ -46,8 +46,8 @@ class TahunAjaran extends Model
 
         if ($ta->wasRecentlyCreated) {
             $ta->semester()->createMany([
-                ['nomor' => 1, 'nama' => 'Semester 1 (Ganjil) '.$ta->nama, 'mulai' => CarbonImmutable::create($y, 7, 1), 'selesai' => CarbonImmutable::create($y, 12, 31)],
-                ['nomor' => 2, 'nama' => 'Semester 2 (Genap) '.$ta->nama, 'mulai' => CarbonImmutable::create($y + 1, 1, 1), 'selesai' => CarbonImmutable::create($y + 1, 6, 30)],
+                ['nomor' => 1, 'nama' => Semester::namaBaku(1, $ta->nama), 'mulai' => CarbonImmutable::create($y, 7, 1), 'selesai' => CarbonImmutable::create($y, 12, 31)],
+                ['nomor' => 2, 'nama' => Semester::namaBaku(2, $ta->nama), 'mulai' => CarbonImmutable::create($y + 1, 1, 1), 'selesai' => CarbonImmutable::create($y + 1, 6, 30)],
             ]);
         }
 

@@ -7,7 +7,7 @@
 @if ($errors->has('file'))<div class="alert err" role="alert">{{ $errors->first('file') }}</div>@endif
 
 <form class="row" method="get" style="margin-bottom:14px">
-  <select name="semester" style="width:auto" aria-label="Semester" onchange="this.form.submit()">@foreach ($daftarSemester as $s)<option value="{{ $s->id }}" @selected($semester?->id === $s->id)>{{ $s->nama }}</option>@endforeach</select>
+  <select name="semester" style="width:auto" aria-label="Semester" onchange="this.form.submit()">@foreach ($daftarSemester as $s)<option value="{{ $s->id }}" @selected($semester?->id === $s->id)>{{ $s->label }}</option>@endforeach</select>
   <div class="seg" role="group" aria-label="Jenis">@foreach ($jenisLabel as $k => $l)<a class="segbtn" href="{{ route('raport.index', array_merge(request()->only(['semester', 'kelas']), ['jenis' => $k])) }}" aria-pressed="{{ $jenis === $k ? 'true' : 'false' }}">{{ $l }}</a>@endforeach</div>
   <input type="hidden" name="jenis" value="{{ $jenis }}">
   <select name="kelas" style="width:auto" aria-label="Kelas" onchange="this.form.submit()"><option value="">Semua kelas</option>@foreach ($daftarKelas as $k)<option value="{{ $k->id }}" @selected($kelasId === $k->id)>{{ $k->nama }}</option>@endforeach</select>

@@ -5,7 +5,7 @@
   $jenis = ['beasiswa' => ['Beasiswa SPP', 'c-acc'], 'diskon' => ['Diskon', 'c-gold'], 'dispensasi_raport' => ['Dispensasi raport', 'c-info']];
   $nilai = function ($k) use ($rp) {
       if ($k->jenis->value === 'dispensasi_raport') {
-          return ($k->semester?->nama ?? 'Semester').' · janji bayar '.$k->berlaku_sampai?->translatedFormat('d M Y');
+          return ($k->semester?->label ?? 'Semester').' · janji bayar '.$k->berlaku_sampai?->translatedFormat('d M Y');
       }
       $besar = $k->persen !== null ? rtrim(rtrim(number_format($k->persen, 2, ',', '.'), '0'), ',').'%' : $rp($k->nominal).' per tagihan';
       return $besar.' · '.($k->jenisTagihan?->nama ?? '');

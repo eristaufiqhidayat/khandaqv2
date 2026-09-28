@@ -26,7 +26,10 @@ class RaportController extends Controller
 {
     public function index(Request $request, AksesRaport $akses)
     {
-        $daftarSemester = Semester::with('tahunAjaran')->orderByDesc('mulai')->get();
+        // Hanya semester yang sudah berjalan, atau yang sudah punya raport; tahun ajaran masa depan tidak ditampilkan.
+        $daftarSemester = Semester::with('tahunAjaran')
+            ->where(fn ($q) => $q->where('mulai', '<=', CarbonImmutable::now()->toDateString())->orWhereHas('raport'))
+            ->orderByDesc('mulai')->get();
         $semester = $daftarSemester->firstWhere('id', $request->integer('semester'))
             ?? $daftarSemester->firstWhere('aktif', true) ?? $daftarSemester->first();
         $jenis = in_array($request->query('jenis'), ['pts', 'pas', 'pat'], true) ? $request->query('jenis') : 'pts';

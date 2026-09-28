@@ -36,10 +36,13 @@ class PeriodeController extends Controller
 
     public function siapkan(): RedirectResponse
     {
-        $terakhir = TahunAjaran::max('tahun_mulai') ?? CarbonImmutable::now()->year;
-        $ta = TahunAjaran::untukTanggal(CarbonImmutable::create($terakhir + 1, 7, 1));
+        // Hanya tahun ajaran berikutnya setelah yang sedang berjalan; tidak menumpuk tahun ajaran jauh ke depan.
+        $berjalan = TahunAjaran::tahunMulaiUntuk(CarbonImmutable::now());
+        $ta = TahunAjaran::untukTanggal(CarbonImmutable::create($berjalan + 1, 7, 1));
 
-        return back()->with('status', "Tahun ajaran {$ta->nama} disiapkan. Atur tarifnya di menu Tarif.");
+        return back()->with('status', $ta->wasRecentlyCreated
+            ? "Tahun ajaran {$ta->nama} disiapkan. Atur tarifnya di menu Tarif."
+            : "Tahun ajaran {$ta->nama} sudah ada.");
     }
 
     public function kelasStore(Request $request): RedirectResponse

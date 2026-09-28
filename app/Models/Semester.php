@@ -21,4 +21,23 @@ class Semester extends Model
     {
         return $this->belongsTo(TahunAjaran::class);
     }
+
+    public function raport(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Raport::class);
+    }
+
+    /** Nama baku, mis. "Semester 1 (Ganjil) 2025/2026". Dipakai juga oleh sinkronisasi agar nama dari data lama seragam. */
+    public static function namaBaku(int $nomor, string $namaTa): string
+    {
+        return 'Semester '.$nomor.' ('.($nomor === 1 ? 'Ganjil' : 'Genap').') '.$namaTa;
+    }
+
+    /** Label untuk layar: selalu menyebut tahun ajaran, walau nama tersimpan tidak. */
+    public function getLabelAttribute(): string
+    {
+        $ta = $this->tahunAjaran?->nama;
+
+        return $ta && ! str_contains((string) $this->nama, $ta) ? trim($this->nama.' '.$ta) : (string) $this->nama;
+    }
 }

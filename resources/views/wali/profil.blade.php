@@ -1,11 +1,8 @@
-@extends('layouts.dasar')
+@extends('layouts.wali')
 @section('judul', 'Profil saya')
-@section('isi')
-<div class="wali-wrap">
-  <div class="wali-top">
-    <div class="brand"><div class="mark"><img src="{{ asset('img/logo.png') }}" alt=""></div><div><b>Profil saya</b><span>Portal wali santri · Khandaq</span></div></div>
-    <div class="row"><a class="btn" href="{{ route('wali.beranda') }}">Kembali</a></div>
-  </div>
+@section('judul-bar', 'Profil')
+@section('kembali', route('wali.data'))
+@section('wali')
   @if ($errors->any())<div class="alert err" role="alert">{{ $errors->first() }}</div>@endif
   <form class="card stack" method="post" action="{{ route('wali.profil.update') }}">
     @csrf @method('put')
@@ -17,5 +14,4 @@
       <span class="hint">@if ($wali->telepon_menunggu)Nomor {{ $wali->telepon_menunggu }} sedang menunggu verifikasi; pemberitahuan masih dikirim ke {{ $wali->telepon }}.@else Nomor baru perlu diverifikasi pondok sebelum dipakai untuk pemberitahuan.@endif</span></div>
     <div><button class="btn p">Simpan</button></div>
   </form>
-</div>
 @endsection

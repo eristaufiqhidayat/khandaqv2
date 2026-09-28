@@ -112,7 +112,7 @@ class MigrasiDataLama
             'Santri' => 'santri', 'Wali & akun portal' => 'wali', 'Riwayat kelas' => 'riwayatKelas',
             'Akun biaya & pengusul' => 'akunPengusul', 'Tarif' => 'tarif', 'Beasiswa' => 'beasiswa',
             'Buku tabungan' => 'tabungan', 'DSB, Daftar Ulang, PTS, PAS, laundry, buku' => 'tabelSamping',
-            'Pengeluaran per dana' => 'pengeluaran', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport', 'Foto santri' => 'fotoSantri',
+            'Pengeluaran per dana' => 'pengeluaran', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport', 'Foto santri' => 'fotoSantri', 'Kalender akademik' => 'kalender',
         ];
         try {
             DB::transaction(function () use ($tahap) {
@@ -224,6 +224,7 @@ class MigrasiDataLama
         foreach (['semester', 'tahun_ajaran', 'kelas', 'akun', 'pengusul'] as $t) {
             DB::table($t)->delete();
         }
+        DB::table('kalender_akademik')->whereNotNull('legacy_no')->delete(); // kegiatan yang diisi di aplikasi baru tetap
     }
 
     private function periode(): void
@@ -757,6 +758,27 @@ class MigrasiDataLama
             $this->masuk('data_siswa.image');
         }
         $this->sumber('data_siswa.image', $ada);
+    }
+
+    /** tbl_kalender_akedemik (no, tanggal, kegiatan) -> kalender_akademik. */
+    private function kalender(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::connection($this->lama->getName())->hasTable('tbl_kalender_akedemik')) {
+            return;
+        }
+        $rows = $this->baca('tbl_kalender_akedemik')->orderBy('no')->get();
+        foreach ($rows as $r) {
+            $tgl = $this->tgl($r->tanggal);
+            if (! $tgl || trim((string) $r->kegiatan) === '') {
+                $this->lewati('tbl_kalender_akedemik', 'tanggal/kegiatan kosong');
+
+                continue;
+            }
+            DB::table('kalender_akademik')->insert(['tanggal_mulai' => $tgl, 'kegiatan' => mb_substr(trim((string) $r->kegiatan), 0, 200),
+                'legacy_no' => $r->no, 'dibuat_oleh' => $this->adminId, 'created_at' => $this->now, 'updated_at' => $this->now]);
+            $this->masuk('tbl_kalender_akedemik');
+        }
+        $this->sumber('tbl_kalender_akedemik', $rows->count());
     }
 
     /** Saldo per santri: cara hitung aplikasi lama vs ledger baru. */

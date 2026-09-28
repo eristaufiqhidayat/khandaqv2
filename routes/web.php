@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\GantiPasswordController;
 use App\Http\Controllers\Auth\MasukController;
 use App\Http\Controllers\BankImporController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\KalenderController;
 use App\Http\Controllers\FotoSantriController;
 use App\Http\Controllers\WaliSantriController;
 use App\Http\Controllers\Wali\ProfilController;
@@ -49,6 +50,10 @@ Route::middleware('auth')->group(function () {
     // Portal wali: hanya data anak sendiri (dijaga query & RaportPolicy).
     Route::middleware('role:wali_santri')->prefix('wali')->name('wali.')->group(function () {
         Route::get('/', PortalController::class)->name('beranda');
+        Route::get('/raport', [PortalController::class, 'raport'])->name('raport');
+        Route::get('/tabungan', [PortalController::class, 'tabungan'])->name('tabungan');
+        Route::get('/kalender', [PortalController::class, 'kalender'])->name('kalender');
+        Route::get('/data', [PortalController::class, 'data'])->name('data');
         Route::get('/profil', [ProfilController::class, 'edit'])->name('profil');
         Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
     });
@@ -142,6 +147,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/siapkan', [PeriodeController::class, 'siapkan'])->name('siapkan');
         Route::post('/kelas', [PeriodeController::class, 'kelasStore'])->name('kelas.store');
         Route::post('/kelas/{kelas}/aktif', [PeriodeController::class, 'kelasToggle'])->name('kelas.toggle');
+    });
+
+    Route::middleware($izin(Izin::PeriodeKelola))->prefix('kalender')->name('kalender.')->group(function () {
+        Route::get('/', [KalenderController::class, 'index'])->name('index');
+        Route::post('/', [KalenderController::class, 'store'])->name('store');
+        Route::put('/{kalender}', [KalenderController::class, 'update'])->name('update');
+        Route::delete('/{kalender}', [KalenderController::class, 'destroy'])->name('destroy');
     });
 
     Route::middleware($izin(Izin::SantriKelola))->prefix('kenaikan-kelas')->name('kenaikan.')->group(function () {

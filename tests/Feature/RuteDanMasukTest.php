@@ -49,7 +49,8 @@ class RuteDanMasukTest extends KhandaqTestCase
         // Wali masuk dengan nomor WhatsApp dalam format apa pun.
         $this->post('/masuk', ['username' => '+62 812-3456-7890', 'password' => 'rahasia123']);
         $this->get('/beranda')->assertRedirect('/wali');
-        $this->get('/wali')->assertOk()->assertSee('Saldo tabungan');
+        $this->get('/wali')->assertOk()->assertSee('Menu Utama');
+        $this->get('/wali/tabungan')->assertOk()->assertSee('Saldo tabungan');
         $this->get('/kasir')->assertForbidden();
     }
 

@@ -19,7 +19,7 @@
 @else
 <form class="card stack" method="post" action="{{ route('sinkronisasi.store') }}" id="fSync" style="margin-bottom:16px">
   @csrf
-  <div class="note warn"><b>Semua data di aplikasi baru akan diganti.</b> Yang tetap: akun staf, peran & hak akses, dana, rekening, jenis tagihan. Password wali tidak dikirim.</div>
+  <div class="note warn"><b>Semua data di aplikasi baru akan diganti.</b> Yang tetap: akun staf, peran &amp; hak akses, dana, rekening, jenis tagihan, kegiatan kalender yang diisi di aplikasi baru. Password wali tidak dikirim.</div>
   <div class="field" style="max-width:280px"><label for="kg">Ketik GANTI untuk melanjutkan</label><input id="kg" name="konfirmasi" type="text" autocomplete="off" required pattern="GANTI"></div>
   <div><button class="btn p">Salin ulang semua data</button></div>
   <p class="hint" id="progres" aria-live="polite"></p>

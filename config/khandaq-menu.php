@@ -23,6 +23,7 @@ return [
     ['label' => 'Tarif', 'route' => 'tarif.index', 'izin' => Izin::TarifKelola],
     ['label' => 'Potongan otomatis', 'route' => 'potongan.index', 'izin' => Izin::PengecualianKelola],
     ['label' => 'Tahun ajaran & kelas', 'route' => 'periode.index', 'izin' => Izin::PeriodeKelola],
+    ['label' => 'Kalender akademik', 'route' => 'kalender.index', 'izin' => Izin::PeriodeKelola],
     ['label' => 'Rekening & akun biaya', 'route' => 'masterkeu.index', 'izin' => Izin::MasterKeuanganKelola],
     ['label' => 'Pengguna', 'route' => 'pengguna.index', 'izin' => [Izin::PenggunaKelola, Izin::AkunWaliReset]], // Admin Office: tab Wali saja
     ['label' => 'Siaran WhatsApp', 'route' => 'siaran.index', 'izin' => Izin::WaSiaran],

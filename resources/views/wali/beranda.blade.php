@@ -1,40 +1,28 @@
-@extends('layouts.dasar')
+@extends('layouts.wali')
 @section('judul', 'Portal wali')
-@php($rp = fn ($n) => 'Rp'.number_format((int) $n, 0, ',', '.'))
-@section('isi')
-<div class="wali-wrap">
-  <div class="wali-top">
-    <div class="brand"><div class="mark"><img src="{{ asset('img/logo.png') }}" alt=""></div><div><b>Assalamu'alaikum, {{ auth()->user()->name }}</b><span>Portal wali santri · Khandaq</span></div></div>
-    <div class="row">
-      <a class="btn" href="{{ route('wali.profil') }}">Profil saya</a>
-      <a class="btn" href="{{ route('password.ganti') }}">Ganti password</a>
-      <form method="post" action="{{ route('logout') }}">@csrf<button class="btn">Keluar</button></form>
-    </div>
-  </div>
-  @if (session('status'))<div class="alert ok" role="status">{{ session('status') }}</div>@endif
-  @forelse ($anak as $a)
-    <div class="card stack" style="margin-bottom:16px">
-      <div class="card-h" style="margin:0"><div class="nama-foto">@include('santri._foto', ['s' => $a['santri']])<h2>{{ $a['santri']->nama }}</h2></div><span class="chip">Kode transfer {{ $a['santri']->kode_unik ?? '—' }}</span></div>
-      <div><div class="eyebrow">Saldo tabungan</div><div class="rp" style="font-size:24px;font-weight:700">{{ $rp($a['saldo']) }}</div></div>
-      <div>
-        <h3 style="margin-bottom:6px">Tagihan terbuka</h3>
-        @forelse ($a['tagihan'] as $t)
-          <div class="ph-line"><span>{{ $t->keterangan }}<br><span class="hint">Jatuh tempo {{ $t->jatuh_tempo->translatedFormat('d M Y') }}</span></span>
-          <span class="rp" style="{{ $t->jatuh_tempo->lt($sekarang) ? 'color:var(--crit)' : '' }}">{{ $rp($t->sisa()) }}</span></div>
-        @empty <p class="hint">Semua tagihan lunas. Terima kasih.</p> @endforelse
-        <p class="hint" style="margin-top:6px">Tagihan terpotong otomatis dari tabungan saat saldo cukup.</p>
-      </div>
-      <div>
-        <h3 style="margin-bottom:6px">Raport</h3>
-        @forelse ($a['raport'] as $r)
-          <div class="ph-line"><span>{{ strtoupper($r['raport']->jenis) }} · {{ $r['raport']->semester->label }}</span>
-          @if ($r['terkunci'])<span class="chip c-crit" title="{{ $r['terkunci'] }}">Tertahan</span>@else<a class="btn sm" href="{{ route('raport.lihat', $r['raport']) }}" target="_blank" rel="noopener">Buka PDF</a>@endif</div>
-          @if ($r['terkunci'])<p class="hint">{{ $r['terkunci'] }}</p>@endif
-        @empty <p class="hint">Belum ada raport yang diterbitkan.</p> @endforelse
-      </div>
-    </div>
+@section('judul-bar', 'Menu Utama')
+@section('wali')
+<p class="wb-sapa">Assalamu'alaikum, <b>{{ auth()->user()->name }}</b></p>
+<nav class="wb-grid" aria-label="Menu utama">
+  <a class="wb-tile" href="{{ route('wali.raport') }}">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="12" y="3" width="24" height="42" rx="4" fill="#111"/><rect x="16" y="9" width="16" height="28" rx="1.5" fill="#fff"/><rect x="19" y="14" width="10" height="3" fill="#111"/><rect x="19" y="20" width="10" height="3" fill="#111"/><rect x="19" y="26" width="7" height="3" fill="#111"/></svg>
+    <span class="lbl">Raport</span></a>
+  <a class="wb-tile" href="{{ route('wali.tabungan') }}">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="4" width="32" height="40" rx="4" fill="#2196F3"/><path d="M15 4h10v16l-5-4-5 4z" fill="#fff"/></svg>
+    <span class="lbl">Tabungan</span></a>
+  <a class="wb-tile" href="{{ route('wali.kalender') }}">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="8" width="38" height="36" rx="4" fill="#607D8B"/><rect x="12" y="3" width="4" height="10" rx="1.5" fill="#607D8B"/><rect x="32" y="3" width="4" height="10" rx="1.5" fill="#607D8B"/><rect x="9" y="17" width="30" height="23" rx="1" fill="#fff"/><g fill="#607D8B"><rect x="12" y="21" width="6" height="5"/><rect x="21" y="21" width="6" height="5"/><rect x="30" y="21" width="6" height="5"/><rect x="12" y="30" width="6" height="5"/><rect x="21" y="30" width="6" height="5"/><rect x="30" y="30" width="6" height="5"/></g></svg>
+    <span class="lbl">Kalender</span></a>
+  <a class="wb-tile" href="{{ route('wali.data') }}">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="4" width="32" height="40" rx="4" fill="#F44336"/><path d="M15 4h10v16l-5-4-5 4z" fill="#fff"/></svg>
+    <span class="lbl">Data</span></a>
+</nav>
+<div class="card wb-anak">
+  <div class="eyebrow">Santri</div>
+  @forelse ($anak as $s)
+    <div class="nama-foto">@include('santri._foto', ['s' => $s])<div><b>{{ $s->nama }}</b><br><span class="hint">NIS {{ $s->nis }} · kode transfer {{ $s->kode_unik ?? '—' }}</span></div></div>
   @empty
-    <div class="card"><p class="muted">Akun Anda belum ditautkan ke santri. Hubungi Admin Office.</p></div>
+    <p class="muted">Akun Anda belum ditautkan ke santri. Hubungi Admin Office.</p>
   @endforelse
 </div>
 @endsection

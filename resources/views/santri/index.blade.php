@@ -32,7 +32,7 @@
   <tbody>
   @forelse ($santri as $s)
     <tr>
-      <td><a href="{{ route('santri.show', $s) }}">{{ $s->nama }}</a><br><span class="hint">NIS {{ $s->nis }}</span></td>
+      <td><div class="nama-foto">@include('santri._foto', ['s' => $s])<div><a href="{{ route('santri.show', $s) }}">{{ $s->nama }}</a><br><span class="hint">NIS {{ $s->nis }}</span></div></div></td>
       <td>{{ $s->riwayatKelas->first()?->kelas?->nama ?? '—' }}</td>
       <td class="num">{{ $s->kode_unik ?? '—' }}</td>
       <td>@forelse ($s->wali as $w){{ $w->name }}<span class="hint"> · {{ $w->pivot->hubungan }}{{ $w->telepon ? '' : ' · tanpa nomor' }}</span><br>@empty<span class="chip c-warn">Belum ada wali</span>@endforelse</td>

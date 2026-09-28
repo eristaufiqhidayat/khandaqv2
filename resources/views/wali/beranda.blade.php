@@ -13,7 +13,7 @@
   @if (session('status'))<div class="alert ok" role="status">{{ session('status') }}</div>@endif
   @forelse ($anak as $a)
     <div class="card stack" style="margin-bottom:16px">
-      <div class="card-h" style="margin:0"><h2>{{ $a['santri']->nama }}</h2><span class="chip">Kode transfer {{ $a['santri']->kode_unik ?? '—' }}</span></div>
+      <div class="card-h" style="margin:0"><div class="nama-foto">@include('santri._foto', ['s' => $a['santri']])<h2>{{ $a['santri']->nama }}</h2></div><span class="chip">Kode transfer {{ $a['santri']->kode_unik ?? '—' }}</span></div>
       <div><div class="eyebrow">Saldo tabungan</div><div class="rp" style="font-size:24px;font-weight:700">{{ $rp($a['saldo']) }}</div></div>
       <div>
         <h3 style="margin-bottom:6px">Tagihan terbuka</h3>

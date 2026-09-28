@@ -221,3 +221,10 @@ details.aksi summary{cursor:pointer;list-style:none;display:inline-flex}
 details.aksi summary::-webkit-details-marker{display:none}
 details.aksi[open]{background:var(--surface-2);border-radius:8px;padding:8px;margin-top:4px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Foto santri */
+.foto{display:inline-grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;background:var(--surface-2);color:var(--ink-3);font-weight:700;vertical-align:middle}
+.foto img{width:100%;height:100%;object-fit:cover;display:block}
+.foto.sm{width:34px;height:34px;font-size:12px}
+.foto.lg{width:120px;height:120px;font-size:34px;border-radius:14px}
+.nama-foto{display:flex;align-items:center;gap:10px}

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\GantiPasswordController;
 use App\Http\Controllers\Auth\MasukController;
 use App\Http\Controllers\BankImporController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\FotoSantriController;
 use App\Http\Controllers\TarifController;
 use App\Http\Controllers\PotonganController;
 use App\Http\Controllers\PeriodeController;
@@ -62,6 +63,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/{santri}/bayar/{tagihan}', [KasirController::class, 'bayar'])->name('bayar');
     });
 
+    // Foto santri (file di storage, bukan publik): wali hanya anaknya sendiri, staf semua. Dicek di controller.
+    Route::get('/foto-santri/{santri}', [FotoSantriController::class, 'tampil'])->name('santri.foto');
+
     Route::get('/bukti-setoran/{mutasi}', [VerifikasiController::class, 'bukti'])->name('setoran.bukti');
     Route::middleware($izin(Izin::SetoranVerifikasi))->prefix('verifikasi')->name('verifikasi.')->group(function () {
         Route::get('/', [VerifikasiController::class, 'index'])->name('index');
@@ -80,6 +84,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/{santri}', [SantriController::class, 'update'])->name('update');
         Route::post('/{santri}/aktifkan', [SantriController::class, 'aktifkan'])->name('aktifkan');
         Route::post('/{santri}/keluarkan', [SantriController::class, 'keluarkan'])->name('keluarkan');
+        Route::post('/{santri}/foto', [FotoSantriController::class, 'simpan'])->name('foto.simpan');
+        Route::post('/{santri}/foto/hapus', [FotoSantriController::class, 'hapus'])->name('foto.hapus');
         Route::post('/{santri}/wali', [SantriController::class, 'waliStore'])->name('wali.store');
         Route::post('/{santri}/wali/{wali}/lepas', [SantriController::class, 'waliLepas'])->name('wali.lepas');
         Route::post('/{santri}/wali/{wali}/reset', [SantriController::class, 'waliReset'])->name('wali.reset');

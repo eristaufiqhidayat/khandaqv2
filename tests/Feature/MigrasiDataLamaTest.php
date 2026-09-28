@@ -116,4 +116,35 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $this->expectException(AturanDilanggar::class);
         $this->jalankan();
     }
+
+    public function test_foto_santri_blob_base64_disalin_menjadi_file(): void
+    {
+        $asli = getenv('KHANDAQ_DB_LAMA_UJI') ?: self::DB_LAMA;
+        $salinan = sys_get_temp_dir().'/sino_foto_'.uniqid().'.db';
+        copy($asli, $salinan);
+        $img = imagecreatetruecolor(1200, 900);
+        ob_start();
+        imagepng($img);
+        $png = (string) ob_get_clean();
+        $pdo = new \PDO('sqlite:'.$salinan);
+        [$a, $b] = $pdo->query('SELECT id_siswa FROM data_siswa ORDER BY id_siswa LIMIT 2')->fetchAll(\PDO::FETCH_COLUMN);
+        $pdo->prepare('UPDATE data_siswa SET image = ? WHERE CAST(id_siswa AS TEXT) = ?')->execute([base64_encode($png), $a]); // seperti C_DataSiswa lama
+        $pdo->prepare('UPDATE data_siswa SET image = NULL WHERE CAST(id_siswa AS TEXT) = ?')->execute([$b]);
+        config(['database.connections.lama.database' => $salinan]);
+        \Illuminate\Support\Facades\DB::purge('lama');
+
+        try {
+            [$run, $file] = $this->jalankan();
+        } finally {
+            @unlink($salinan);
+        }
+        $foto = Santri::where('legacy_id_siswa', $a)->value('foto');
+        $this->assertSame("foto-santri/lama-{$a}.jpg", $foto);
+        $this->assertArrayHasKey($foto, $file);
+        $this->assertGreaterThan(0, $file[$foto]);
+        $this->assertNull(Santri::where('legacy_id_siswa', $b)->value('foto'));
+        $r = $run->ringkasan['data_siswa.image'];
+        $this->assertSame(1, $r['masuk']);
+        $this->assertSame($r['sumber'], $r['masuk'] + $r['dilewati'], 'isi bukan gambar (mis. data uji "ADA") dicatat dilewati');
+    }
 }

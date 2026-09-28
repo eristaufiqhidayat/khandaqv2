@@ -6,6 +6,8 @@ use App\Http\Controllers\Auth\MasukController;
 use App\Http\Controllers\BankImporController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\FotoSantriController;
+use App\Http\Controllers\WaliSantriController;
+use App\Http\Controllers\Wali\ProfilController;
 use App\Http\Controllers\TarifController;
 use App\Http\Controllers\PotonganController;
 use App\Http\Controllers\PeriodeController;
@@ -47,6 +49,14 @@ Route::middleware('auth')->group(function () {
     // Portal wali: hanya data anak sendiri (dijaga query & RaportPolicy).
     Route::middleware('role:wali_santri')->prefix('wali')->name('wali.')->group(function () {
         Route::get('/', PortalController::class)->name('beranda');
+        Route::get('/profil', [ProfilController::class, 'edit'])->name('profil');
+        Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
+    });
+
+    // Ubah data wali oleh petugas (dari detail santri atau tab Wali santri di Pengguna).
+    Route::middleware('permission:'.Izin::SantriKelola->value.'|'.Izin::AkunWaliReset->value)->prefix('wali-santri')->name('walisantri.')->group(function () {
+        Route::get('/{wali}/ubah', [WaliSantriController::class, 'edit'])->name('edit');
+        Route::put('/{wali}', [WaliSantriController::class, 'update'])->name('update');
     });
 
     // Staf: setiap menu dijaga IZIN-nya, sama dengan yang menentukan menu tampil (config/khandaq-menu.php).

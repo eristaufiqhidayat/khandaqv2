@@ -64,6 +64,7 @@
         <div class="ph-line"><span><b>{{ $w->name }}</b> · {{ $w->pivot->hubungan }}<br>
           <span class="hint">{{ $w->telepon ?? 'tanpa nomor WA' }}{{ $w->telepon_menunggu ? ' · nomor baru menunggu: '.$w->telepon_menunggu : '' }} · username {{ $w->username }}{{ $w->aktif ? '' : ' · nonaktif' }}</span></span>
           <span class="row" style="gap:6px">
+            <a class="btn sm" href="{{ route('walisantri.edit', ['wali' => $w, 'kembali' => route('santri.show', $santri)]) }}">Ubah</a>
             @if ($bolehReset)<form method="post" action="{{ route('santri.wali.reset', [$santri, $w]) }}" onsubmit="return confirm('Reset password {{ $w->name }}? Password baru dikirim ke WhatsApp-nya.')">@csrf<button class="btn sm">Reset password</button></form>@endif
             @if ($santri->wali->count() > 1)<form method="post" action="{{ route('santri.wali.lepas', [$santri, $w]) }}" onsubmit="return confirm('Lepas {{ $w->name }} dari {{ $santri->nama }}?')">@csrf<button class="btn sm">Lepas</button></form>@endif
           </span></div>

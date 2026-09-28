@@ -73,14 +73,77 @@ class DataWaliService
         }
     }
 
+    /**
+     * Ubah data wali oleh petugas (Admin Office). Nomor WhatsApp langsung berlaku (petugas = pemverifikasi),
+     * tetapi ditolak bila sudah dipakai akun lain agar tidak ada dua akun untuk satu orang.
+     * Username tidak diubah; wali tetap bisa masuk dengan username lama atau nomor WA barunya.
+     *
+     * @param  array<int,string>  $hubungan  santri_id => ayah|ibu|wali
+     */
+    public function ubahOlehPetugas(User $wali, array $data, array $hubungan, User $petugas): User
+    {
+        if (! $petugas->hasPermissionTo(Izin::SantriKelola->value) && ! $petugas->hasPermissionTo(Izin::AkunWaliReset->value)) {
+            throw new AturanDilanggar('Tidak punya izin mengubah data wali.');
+        }
+        if (! $wali->hasRole('wali_santri')) {
+            throw new AturanDilanggar('Akun ini bukan akun wali.');
+        }
+        if (blank($data['name'] ?? null) || blank($data['telepon'] ?? null)) {
+            throw new AturanDilanggar('Nama dan nomor WhatsApp wajib diisi.');
+        }
+        $telepon = PendaftaranService::normalTelepon($data['telepon']);
+        $pemilik = User::where(fn ($q) => $q->where('telepon', $telepon)->orWhere('username', $telepon))->whereKeyNot($wali->id)->first();
+        if ($pemilik) {
+            throw new AturanDilanggar("Nomor {$telepon} sudah dipakai akun {$pemilik->name}. Bila orangnya sama, tautkan santri ke akun itu lewat Tambah wali.");
+        }
+        $email = trim((string) ($data['email'] ?? ''));
+        if ($email !== '' && User::where('email', $email)->whereKeyNot($wali->id)->exists()) {
+            throw new AturanDilanggar("Email {$email} sudah dipakai akun lain.");
+        }
+
+        return DB::transaction(function () use ($wali, $data, $hubungan, $telepon, $email) {
+            $wali->fill([
+                'name' => trim($data['name']), 'nik' => ($data['nik'] ?? null) ?: null,
+                'alamat' => ($data['alamat'] ?? null) ?: null, 'pekerjaan' => ($data['pekerjaan'] ?? null) ?: null,
+            ]);
+            if ($email !== '') {
+                $wali->email = $email;
+            }
+            if ($telepon !== $wali->telepon) {
+                $wali->telepon = $telepon;
+                $wali->telepon_menunggu = null;
+            } elseif ($wali->telepon_menunggu === $telepon) {
+                $wali->telepon_menunggu = null;
+            }
+            $wali->save();
+            foreach ($hubungan as $santriId => $h) {
+                if (in_array($h, ['ayah', 'ibu', 'wali'], true)) {
+                    $wali->anak()->updateExistingPivot((int) $santriId, ['hubungan' => $h]);
+                }
+            }
+
+            return $wali;
+        });
+    }
+
+    /** Portal wali: alamat, pekerjaan, email langsung tersimpan; nomor WhatsApp baru menunggu verifikasi Admin Office. */
     public function ubahProfil(User $wali, array $data): User
     {
-        $wali->fill(array_intersect_key($data, array_flip(['alamat', 'pekerjaan', 'email'])));
+        $email = trim((string) ($data['email'] ?? ''));
+        if ($email !== '' && User::where('email', $email)->whereKeyNot($wali->id)->exists()) {
+            throw new AturanDilanggar("Email {$email} sudah dipakai akun lain.");
+        }
+        foreach (['alamat', 'pekerjaan'] as $k) {
+            if (array_key_exists($k, $data)) {
+                $wali->{$k} = trim((string) $data[$k]) ?: null;
+            }
+        }
+        if ($email !== '') {
+            $wali->email = $email;
+        }
         if (! empty($data['telepon'])) {
             $baru = PendaftaranService::normalTelepon($data['telepon']);
-            if ($baru !== $wali->telepon) {
-                $wali->telepon_menunggu = $baru;
-            }
+            $wali->telepon_menunggu = $baru !== $wali->telepon ? $baru : null;
         }
         $wali->save();
 

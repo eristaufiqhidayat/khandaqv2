@@ -62,6 +62,7 @@
       @if ($w->password_lama)<br><span class="hint">Masih memakai password aplikasi lama</span>@elseif ($w->wajib_ganti_password)<br><span class="hint">Belum mengganti password awal</span>@endif</td>
     @if ($bolehKelolaWali)
     <td class="r"><div class="row" style="justify-content:flex-end">
+      <a class="btn sm" href="{{ route('walisantri.edit', ['wali' => $w, 'kembali' => request()->fullUrl()]) }}">Ubah</a>
       <form method="post" action="{{ route('pengguna.wali.reset', $w) }}" onsubmit="return confirm('Reset password {{ addslashes($w->name) }}? Password baru dikirim ke WhatsApp {{ $w->telepon }}.')">@csrf<button class="btn sm" @disabled(! $w->telepon)>Reset password</button></form>
       <form method="post" action="{{ route('pengguna.wali.aktif', $w) }}">@csrf<button class="btn sm">{{ $w->aktif ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>
     </div></td>

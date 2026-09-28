@@ -6,6 +6,7 @@
   <div class="wali-top">
     <div class="brand"><div class="mark"><img src="{{ asset('img/logo.png') }}" alt=""></div><div><b>Assalamu'alaikum, {{ auth()->user()->name }}</b><span>Portal wali santri · Khandaq</span></div></div>
     <div class="row">
+      <a class="btn" href="{{ route('wali.profil') }}">Profil saya</a>
       <a class="btn" href="{{ route('password.ganti') }}">Ganti password</a>
       <form method="post" action="{{ route('logout') }}">@csrf<button class="btn">Keluar</button></form>
     </div>

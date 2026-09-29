@@ -36,4 +36,25 @@
     </tbody></table></div>
   </div>
 </div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-h"><h2>Notifikasi email BSI</h2>
+    @if ($emailAktif)<span class="chip c-good">Dibaca otomatis tiap 5 menit</span>@elseif ($email->isNotEmpty())<span class="chip c-good">Lewat pipe email</span>@else<span class="chip">Belum diatur</span>@endif</div>
+  <p class="hint" style="margin-top:0">Setiap email transaksi dari BSICenter@bankbsi.co.id dicatat di sini dan langsung dicocokkan dengan laporan transfer wali, tanpa menunggu unggah CSV. Hanya email dengan tanda tangan digital (DKIM) bankbsi.co.id yang diterima.</p>
+  <div class="tw"><table><thead><tr><th>Waktu</th><th>Nomor transaksi</th><th class="r">Masuk</th><th class="r">Keluar</th><th>Hasil</th></tr></thead><tbody>
+  @forelse ($email as $m)
+    <tr><td class="num">{{ $m->tanggal->translatedFormat('d M Y H:i') }}</td><td class="num">{{ $m->no_referensi }}</td>
+      <td class="r rp">{{ $m->kredit ? 'Rp'.number_format($m->kredit, 0, ',', '.') : '—' }}</td>
+      <td class="r rp">{{ $m->debet ? 'Rp'.number_format($m->debet, 0, ',', '.') : '—' }}</td>
+      <td>@switch($m->status->value)
+          @case('cocok')<span class="chip c-good">Cocok, setoran terverifikasi</span>@break
+          @case('ditinjau')<span class="chip c-warn">Perlu ditinjau</span>@break
+          @case('diabaikan')<span class="chip">Bukan setoran</span>@break
+          @default<span class="chip">{{ $m->status->value }}</span>@endswitch
+        @if ($m->status->value === 'ditinjau' && $m->catatan)<br><span class="hint">{{ $m->catatan }}</span>@endif</td></tr>
+  @empty
+    <tr><td colspan="5" class="muted">Belum ada notifikasi email yang tercatat.</td></tr>
+  @endforelse
+  </tbody></table></div>
+</div>
 @endsection

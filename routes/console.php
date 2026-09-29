@@ -9,3 +9,7 @@ Schedule::command('khandaq:tagihan-bulanan')->monthlyOn(1, '00:10')->withoutOver
 
 // Pengingat H-3 & tahapan tunggakan, setiap pagi.
 Schedule::command('khandaq:peringatan')->dailyAt('07:00')->withoutOverlapping();
+
+// Notifikasi email transaksi BSI -> mutasi bank + cocokkan setoran wali (bila BSI_EMAIL_MAILDIR diisi).
+Schedule::command('khandaq:bsi-email')->everyFiveMinutes()->withoutOverlapping()
+    ->when(fn () => filled(config('khandaq.bsi.email_maildir')));

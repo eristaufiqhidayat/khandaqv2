@@ -26,6 +26,8 @@ class BankImporController extends Controller
             'formatTanggal' => config('khandaq.bsi.format_tanggal'),
             'riwayat' => BankImpor::with('pengimpor')->latest()->limit(15)->get(),
             'ditinjau' => BankMutasi::where('status', StatusBankMutasi::Ditinjau->value)->count(),
+            'email' => BankMutasi::whereNull('bank_impor_id')->where('deskripsi', 'Notifikasi email BSI')->latest('tanggal')->limit(10)->get(),
+            'emailAktif' => filled(config('khandaq.bsi.email_maildir')),
         ]);
     }
 

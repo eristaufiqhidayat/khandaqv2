@@ -1,0 +1,43 @@
+Return-Path: <BSICenter@bankbsi.co.id>
+Delivered-To: BSI1@LEMBAHARAFAH.COM
+Received: from sorosutan.idweb.host
+	by sorosutan.idweb.host with LMTP
+	id /UCdBsHkqWr9hxYAkusaWQ
+	(envelope-from <BSICenter@bankbsi.co.id>)
+	for <BSI1@LEMBAHARAFAH.COM>; Wed, 16 Sep 2026 07:37:21 +0700
+Return-path: <BSICenter@bankbsi.co.id>
+Envelope-to: BSI1@LEMBAHARAFAH.COM
+Delivery-date: Wed, 16 Sep 2026 07:37:21 +0700
+Received: from mailer.bankbsi.co.id ([103.23.117.29]:44712 helo=mail.bankbsi.co.id)
+	by sorosutan.idweb.host with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.100)
+	(envelope-from <BSICenter@bankbsi.co.id>)
+	id 1x6deM-00000006C7T-1xXQ
+	for BSI1@LEMBAHARAFAH.COM;
+	Wed, 16 Sep 2026 07:37:20 +0700
+Received: from mail.bankbsi.co.id (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id E150C632BF
+	for <BSI1@LEMBAHARAFAH.COM>; Wed, 16 Sep 2026 07:37:18 +0700 (WIB)
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=bankbsi.co.id;
+	s=default; t=1789519039;
+	bh=MQmfTa0ki54Y8AaKzCpiugNdPWa8VBCoiubGVBg9Pbg=; h=Date:From:To;
+	b=ViSbQtVoQNnFs44JohDlBHvlYKI9F1x4g2/C0k9TW3RvopKomI7k78hSiNoKJ0koM
+	 xBWp0cqWkjby5rr6GlB4jDN2p4Cb2q4QzpWZaLdKWkCWf736Qept+ZPsewB+/bqg/n
+	 bbeFBHUEcoliWy795at9CUruXaG01Hbl6FWF1GZw=
+Received: from mail.bankbsi.co.id (unknown [127.0.0.1])
+	by IMSVA (Postfix) with ESMTP id DEAA463221
+	for <BSI1@LEMBAHARAFAH.COM>; Wed, 16 Sep 2026 07:37:18 +0700 (WIB)
+Received: from autoscale-transactbatchservice-6fb497b47d-hkqnx (unknown [10.216.100.30])
+	by mail.bankbsi.co.id (Postfix) with ESMTP
+	for <BSI1@LEMBAHARAFAH.COM>; Wed, 16 Sep 2026 07:37:18 +0700 (WIB)
+Date: Wed, 16 Sep 2026 07:37:18 +0700 (WIB)
+From: BSICenter@bankbsi.co.id
+To: BSI1@LEMBAHARAFAH.COM
+Message-ID: <61450520.8193.1789519038851@autoscale-transactbatchservice-6fb497b47d-hkqnx>
+Subject: NotifikasiDebit
+MIME-Version: 1.0
+Content-Type: text/html; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-TM-AS-GCONF: 00
+
+Berikut Notifikasi untuk Anda : Debit<br>Nomor Rekening : XXXXXX3330<br>Nilai Transaksi : IDR-280,000.00<br>Tanggal Transaksi : 16 SEP 2026 07:37<br>Nomor Transaksi : FT262590CWFJ<br><br>Jika transaksi tidak anda kenal,Hub Bank Syariah Indonesia Call 14040

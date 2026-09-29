@@ -72,7 +72,7 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $this->assertGreaterThan(1000, $total);
         $this->assertLessThan($total * 0.03, $tanpaBulan, 'hampir semua potongan SPP mendapat bulan');
         $baris = (new \App\Services\LaporanTagihan())->rekapSpp(\App\Models\TahunAjaran::untukTanggal(\Carbon\CarbonImmutable::create(2025, 7, 1)), \Carbon\CarbonImmutable::create(2026, 6, 30));
-        $lunas = collect($baris)->sum(fn ($b) => collect($b['bulan'])->filter(fn ($v) => $v === \App\Services\LaporanTagihan::LUNAS)->count());
+        $lunas = collect($baris)->sum(fn ($b) => collect($b['bulan'])->filter(fn ($v) => in_array($v, [\App\Services\LaporanTagihan::LUNAS, \App\Services\LaporanTagihan::LUNAS_TELAT], true))->count());
         $this->assertGreaterThan(500, $lunas, 'kisi SPP 2025/2026 terisi dari data lama');
     }
 

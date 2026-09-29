@@ -29,13 +29,38 @@ class LaporanTagihanTest extends KhandaqTestCase
         $this->assertSame(2 * 1_400_000, $rows[0]['sisa_terlambat']);
         $this->assertSame('belum', $rows[0]['bulan']['2025-09-01'], 'September belum jatuh tempo');
         $this->assertSame('-', $rows[0]['bulan']['2025-10-01']);
-        $this->assertSame('lunas', $rows[1]['bulan']['2025-07-01']);
+        $this->assertSame('lunas_telat', $rows[1]['bulan']['2025-07-01'], 'Juli dibayar 5 Sep: lunas tapi terlambat');
+        $this->assertSame('lunas', $rows[1]['bulan']['2025-09-01'], 'September dibayar sebelum jatuh tempo');
+        $this->assertSame(2, $rows[1]['bulan_telat_bayar']);
+        $this->assertSame(0, $rows[1]['bulan_terlambat']);
+        $d = $rows[1]['detail']['2025-07-01'];
+        $this->assertSame('2025-09-05', $d['tanggal_lunas']);
+        $this->assertSame(36, $d['hari_telat']);
+        $this->assertSame('2025-09-05', $d['bayar'][0]['tanggal']);
+        $this->assertSame([], $rows[0]['detail']['2025-07-01']['bayar'], 'penunggak belum membayar');
+        $this->assertSame(1_400_000, $rows[0]['detail']['2025-07-01']['sisa']);
 
         $this->assertCount(1, $lap->rekapSpp($ta, $this->tgl('2025-09-15'), status: 'menunggak'));
         $this->assertCount(1, $lap->rekapSpp($ta, $this->tgl('2025-09-15'), Kelas::where('nama', '3 PUTRA')->first()));
 
         $r = $lap->ringkasanSpp($ta, $this->tgl('2025-09-15'));
         $this->assertSame(['berbayar' => 2, 'lunas' => 1, 'persen' => 50.0, 'menunggak' => 1, 'total_tunggakan' => 2_800_000], $r);
+    }
+
+    public function test_halaman_status_membedakan_telat_bayar_dan_menunggak_dengan_rincian(): void
+    {
+        $rajin = $this->santri('3 PUTRA');
+        $this->santri('1 PUTRA');
+        foreach (['2025-07-01', '2025-08-01'] as $b) {
+            $this->generator()->bulanan($this->tgl($b));
+        }
+        $this->tabungan()->catatSetoran($rajin, 6_000_000, $this->tgl('2025-09-05'), false, $this->adminOffice());
+        $this->travelTo($this->tgl('2025-09-15'));
+
+        $r = $this->actingAs(\App\Models\User::create(['name' => 'Keu', 'username' => 'keu', 'email' => 'keu@test.local',
+            'password' => \App\Services\AkunService::hash('rahasia123'), 'wajib_ganti_password' => false])->assignRole('keuangan'))->get(route('laporan.status', ['ta' => \App\Models\TahunAjaran::untukTanggal($this->tgl('2025-07-01'))->id]))->assertOk();
+        $r->assertSee('Lunas terlambat')->assertSee('Menunggak')->assertSee('bl telat', false)->assertSee('bl terlambat', false);
+        $r->assertSee('05 Sep 2025', false)->assertSee('telat 36 hari', false)->assertSee('id="blpop"', false);
     }
 
     public function test_rekap_dsb_du_menampilkan_sisa_cicilan(): void

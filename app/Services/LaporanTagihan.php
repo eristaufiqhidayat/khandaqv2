@@ -18,7 +18,8 @@ use Carbon\CarbonInterface;
 class LaporanTagihan
 {
     /** Status sel kisi bulan. */
-    public const LUNAS = 'lunas', SEBAGIAN = 'sebagian', TERLAMBAT = 'terlambat', BELUM_JATUH_TEMPO = 'belum', TANPA_TAGIHAN = '-';
+    /** LUNAS = dibayar tepat waktu; LUNAS_TELAT = dibayar setelah jatuh tempo; TERLAMBAT = menunggak (lewat jatuh tempo, belum lunas). */
+    public const LUNAS = 'lunas', LUNAS_TELAT = 'lunas_telat', SEBAGIAN = 'sebagian', TERLAMBAT = 'terlambat', BELUM_JATUH_TEMPO = 'belum', TANPA_TAGIHAN = '-';
 
     /**
      * @param  'semua'|'menunggak'|'lunas'  $status
@@ -41,11 +42,14 @@ class LaporanTagihan
         $tagihan = Tagihan::where('jenis_tagihan_id', $spp->id)->where('tahun_ajaran_id', $ta->id)
             ->whereIn('santri_id', $santriList->pluck('id'))
             ->where('status', '!=', StatusTagihan::Dibatalkan->value)
+            ->with(['pembayaran' => fn ($q) => $q->where('arah', 'debit')->where('status', 'terverifikasi')->orderBy('tanggal')])
             ->get()->groupBy('santri_id');
 
         $hasil = [];
         foreach ($santriList as $s) {
             $sel = array_fill_keys($bulanList, self::TANPA_TAGIHAN);
+            $detail = [];
+            $telatBayar = 0;
             $terlambat = 0;
             $sisa = 0;
             foreach ($tagihan->get($s->id, collect()) as $t) {
@@ -53,14 +57,30 @@ class LaporanTagihan
                 if (! $k || ! array_key_exists($k, $sel)) {
                     continue;
                 }
-                $lewat = $t->jatuh_tempo->toDateString() < $hari;
+                // Jatuh tempo: akhir bulan tagihan. Tagihan hasil sinkron menyimpan tanggal potong sebagai jatuh tempo,
+                // jadi untuk data lama dipakai akhir bulan periodenya agar "dibayar telat" terlihat.
+                $tempo = $t->legacy_ref ? $t->periode->endOfMonth()->toDateString() : $t->jatuh_tempo->toDateString();
+                $lewat = $tempo < $hari;
                 $lunas = $t->status === StatusTagihan::Lunas || $t->sisa() === 0;
+                $bayar = $t->pembayaran->map(fn ($m) => ['tanggal' => $m->tanggal->toDateString(), 'nominal' => (int) $m->nominal])->values()->all();
+                $tglLunas = $lunas && $bayar ? end($bayar)['tanggal'] : null;
+                $telat = $lunas && $tglLunas && $tglLunas > $tempo;
                 $sel[$k] = match (true) {
+                    $lunas && $telat => self::LUNAS_TELAT,
                     $lunas => self::LUNAS,
                     $lewat => self::TERLAMBAT,
                     $t->status === StatusTagihan::Sebagian => self::SEBAGIAN,
                     default => self::BELUM_JATUH_TEMPO,
                 };
+                $detail[$k] = [
+                    'keterangan' => $t->keterangan, 'netto' => $t->netto(), 'potongan' => (int) $t->potongan,
+                    'terbayar' => (int) $t->terbayar, 'sisa' => $t->sisa(), 'jatuh_tempo' => $tempo,
+                    'bayar' => $bayar, 'tanggal_lunas' => $tglLunas,
+                    'hari_telat' => $telat ? (int) \Carbon\CarbonImmutable::parse($tempo)->diffInDays(\Carbon\CarbonImmutable::parse($tglLunas)) : 0,
+                ];
+                if ($telat) {
+                    $telatBayar++;
+                }
                 if ($lewat && ! $lunas) {
                     $terlambat++;
                     $sisa += $t->sisa();
@@ -71,7 +91,7 @@ class LaporanTagihan
             }
             $hasil[] = [
                 'santri' => $s, 'kelas' => $s->riwayatKelas->first()?->kelas?->nama,
-                'bulan' => $sel, 'bulan_terlambat' => $terlambat, 'sisa_terlambat' => $sisa,
+                'bulan' => $sel, 'detail' => $detail, 'bulan_terlambat' => $terlambat, 'sisa_terlambat' => $sisa, 'bulan_telat_bayar' => $telatBayar,
             ];
         }
 

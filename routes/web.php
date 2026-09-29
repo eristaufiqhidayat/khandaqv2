@@ -29,6 +29,7 @@ use App\Http\Controllers\SinkronisasiController;
 use App\Http\Controllers\StatusPembayaranController;
 use App\Http\Controllers\TunggakanController;
 use App\Http\Controllers\TutupBukuController;
+use App\Http\Controllers\GajiController;
 use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\Wali\PortalController;
 use App\Http\Controllers\WebhookWaController;
@@ -192,6 +193,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [PengeluaranController::class, 'store'])->name('store');
         Route::delete('/{pengeluaran}', [PengeluaranController::class, 'destroy'])->name('destroy');
         Route::get('/{pengeluaran}/bukti', [PengeluaranController::class, 'bukti'])->name('bukti');
+    });
+
+    Route::middleware($izin(Izin::GajiKelola))->prefix('gaji')->name('gaji.')->group(function () {
+        Route::get('/', [GajiController::class, 'index'])->name('index');
+        Route::post('/', [GajiController::class, 'store'])->name('store');
+        Route::get('/pegawai', [GajiController::class, 'pegawai'])->name('pegawai');
+        Route::post('/pegawai', [GajiController::class, 'simpanPegawai'])->name('pegawai.store');
+        Route::post('/pegawai/impor', [GajiController::class, 'imporPegawai'])->name('pegawai.impor');
+        Route::get('/pegawai/{pegawai}/ubah', [GajiController::class, 'ubahPegawai'])->name('pegawai.edit');
+        Route::put('/pegawai/{pegawai}', [GajiController::class, 'perbaruiPegawai'])->name('pegawai.update');
+        Route::get('/{penggajian}', [GajiController::class, 'show'])->name('show');
+        Route::put('/{penggajian}', [GajiController::class, 'update'])->name('update');
+        Route::delete('/{penggajian}', [GajiController::class, 'destroy'])->name('destroy');
+        Route::get('/{penggajian}/unduh', [GajiController::class, 'unduh'])->name('unduh');
+        Route::post('/{penggajian}/final', [GajiController::class, 'finalkan'])->name('final');
     });
 
     Route::middleware($izin(Izin::MasterKeuanganKelola))->prefix('master-keuangan')->name('masterkeu.')->group(function () {

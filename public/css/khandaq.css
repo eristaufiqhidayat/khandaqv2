@@ -291,3 +291,7 @@ button.bl:hover{outline:2px solid var(--ink-3);outline-offset:1px}
 .blpop-rinci td{padding:3px 0;border:0}
 .blpop-bayar .ph-line{padding:5px 0;font-size:13px}
 .blpop-rinci td:first-child{white-space:nowrap;padding-right:12px;color:var(--ink-3)}
+
+/* Gaji pegawai */
+fieldset.field{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+fieldset.field legend{font-weight:600;font-size:13px;margin-bottom:4px;padding:0}

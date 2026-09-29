@@ -48,8 +48,8 @@
   </select></div>
   <div><button class="btn p">Tampilkan</button>@if ($q !== '' || $status !== 'semua') <a class="btn" href="{{ route('pengguna.index', ['tab' => 'wali']) }}">Reset</a>@endif</div>
 </form>
-@unless ($bolehKelolaWali)<div class="note info" style="margin-bottom:14px">Reset password dan nonaktifkan akun wali dilakukan oleh pemegang izin "Reset sandi &amp; nonaktifkan akun wali" (bawaan: Admin Office). Izin bisa dipindah di Hak akses.</div>@endunless
-<div class="card"><div class="tw"><table><thead><tr><th>Wali</th><th>Anak</th><th>Akun</th>@if ($bolehKelolaWali)<th></th>@endif</tr></thead><tbody>
+@unless ($bolehKelolaWali)<div class="note info" style="margin-bottom:14px">Data wali (nama, nomor WA, email, alamat, pekerjaan, hubungan) bisa diubah lewat tombol <b>Ubah</b>. Reset password dan nonaktifkan akun wali dilakukan oleh pemegang izin "Reset sandi &amp; nonaktifkan akun wali" (bawaan: Admin Office); izin bisa dipindah di Hak akses.</div>@endunless
+<div class="card"><div class="tw"><table><thead><tr><th>Wali</th><th>Anak</th><th>Akun</th>@if ($bolehUbahWali)<th></th>@endif</tr></thead><tbody>
 @forelse ($wali as $w)
   <tr>
     <td>{{ $w->name }}<br><span class="hint">{{ $w->username ?? 'tanpa username' }} · {{ $w->telepon ?: 'tanpa WA' }}</span>
@@ -60,11 +60,13 @@
       @empty<span class="hint">Tidak ada anak tertaut</span>@endforelse</td>
     <td>@if ($w->aktif)<span class="chip c-good">Aktif</span>@else<span class="chip c-crit">Nonaktif</span>@endif
       @if ($w->password_lama)<br><span class="hint">Masih memakai password aplikasi lama</span>@elseif ($w->wajib_ganti_password)<br><span class="hint">Belum mengganti password awal</span>@endif</td>
-    @if ($bolehKelolaWali)
+    @if ($bolehUbahWali)
     <td class="r"><div class="row" style="justify-content:flex-end">
       <a class="btn sm" href="{{ route('walisantri.edit', ['wali' => $w, 'kembali' => request()->fullUrl()]) }}">Ubah</a>
+      @if ($bolehKelolaWali)
       <form method="post" action="{{ route('pengguna.wali.reset', $w) }}" onsubmit="return confirm('Reset password {{ addslashes($w->name) }}? Password baru dikirim ke WhatsApp {{ $w->telepon }}.')">@csrf<button class="btn sm" @disabled(! $w->telepon)>Reset password</button></form>
       <form method="post" action="{{ route('pengguna.wali.aktif', $w) }}">@csrf<button class="btn sm">{{ $w->aktif ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>
+      @endif
     </div></td>
     @endif
   </tr>

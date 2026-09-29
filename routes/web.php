@@ -62,7 +62,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Ubah data wali oleh petugas (dari detail santri atau tab Wali santri di Pengguna).
-    Route::middleware('permission:'.Izin::SantriKelola->value.'|'.Izin::AkunWaliReset->value)->prefix('wali-santri')->name('walisantri.')->group(function () {
+    Route::middleware('permission:'.Izin::PenggunaKelola->value.'|'.Izin::SantriKelola->value.'|'.Izin::AkunWaliReset->value)->prefix('wali-santri')->name('walisantri.')->group(function () {
         Route::get('/{wali}/ubah', [WaliSantriController::class, 'edit'])->name('edit');
         Route::put('/{wali}', [WaliSantriController::class, 'update'])->name('update');
     });

@@ -192,6 +192,11 @@ class LayarPengaturanTest extends KhandaqTestCase
         $this->get(route('pengguna.index', ['tab' => 'wali', 'q' => $anak->nama]))->assertSee('Bapak Fulan')->assertDontSee('Ibu Tanpa Nomor');
         $this->get(route('pengguna.index', ['tab' => 'wali', 'status' => 'tanpa_wa']))->assertSee('Ibu Tanpa Nomor')->assertDontSee('Bapak Fulan');
         $this->post(route('pengguna.wali.aktif', $w))->assertForbidden();
+        // Admin boleh mengubah data wali (nomor WA, alamat, dll.) dari tab ini.
+        $this->get(route('pengguna.index', ['tab' => 'wali']))->assertSee(route('walisantri.edit', ['wali' => $w, 'kembali' => route('pengguna.index', ['tab' => 'wali'])]), false);
+        $this->put(route('walisantri.update', $w), ['name' => 'Bapak Fulan', 'telepon' => '081299990077', 'alamat' => 'Jl. Pondok 7',
+            'kembali' => route('pengguna.index', ['tab' => 'wali'])])->assertRedirect(route('pengguna.index', ['tab' => 'wali']));
+        $this->assertSame(['081299990077', 'Jl. Pondok 7'], [$w->fresh()->telepon, $w->fresh()->alamat]);
         // Aksi tab Staf tidak bisa dipakai pada akun wali (mis. menjadikan wali admin).
         $this->post(route('pengguna.peran', $w), ['peran' => 'admin'])->assertNotFound();
         $this->assertFalse($w->fresh()->hasRole('admin'));

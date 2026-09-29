@@ -118,7 +118,7 @@ class MigrasiDataLama
             'Santri' => 'santri', 'Wali & akun portal' => 'wali', 'Riwayat kelas' => 'riwayatKelas',
             'Akun biaya & pengusul' => 'akunPengusul', 'Tarif' => 'tarif', 'Beasiswa' => 'beasiswa',
             'Buku tabungan' => 'tabungan', 'DSB, Daftar Ulang, PTS, PAS, laundry, buku' => 'tabelSamping',
-            'Pengeluaran per dana' => 'pengeluaran', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport', 'Foto santri' => 'fotoSantri', 'Kalender akademik' => 'kalender',
+            'Pengeluaran per dana' => 'pengeluaran', 'Tagihan bulan berjalan' => 'tagihanBerjalan', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport', 'Foto santri' => 'fotoSantri', 'Kalender akademik' => 'kalender',
         ];
         try {
             DB::transaction(function () use ($tahap) {
@@ -765,6 +765,25 @@ class MigrasiDataLama
             $this->masuk('data_siswa.image');
         }
         $this->sumber('data_siswa.image', $ada);
+    }
+
+    /**
+     * Aplikasi lama tidak membuat tagihan; bulan yang belum dipotong tidak tercatat di mana pun, sehingga tunggakan
+     * tidak terlihat. Untuk tahun ajaran berjalan, tagihan bulanan (SPP, laundry, kesehatan) dibuat untuk setiap
+     * bulan sampai bulan ini yang belum terisi potongan lama (lihat pilihPeriode). Saldo tidak disentuh: tagihan
+     * ini berstatus belum dibayar dan baru terpotong saat ada setoran berikutnya.
+     */
+    private function tagihanBerjalan(): void
+    {
+        $ta = \App\Models\TahunAjaran::untukTanggal($this->now);
+        $generator = app(\App\Services\TagihanGenerator::class);
+        $n = 0;
+        for ($bulan = CarbonImmutable::parse($ta->mulai)->startOfMonth(); $bulan->lte($this->now->startOfMonth()); $bulan = $bulan->addMonth()) {
+            $n += $generator->bulanan($bulan);
+        }
+        $this->sumber('tagihan bulan berjalan', $n);
+        $this->masuk('tagihan bulan berjalan', $n);
+        $this->catatan('tagihan bulan berjalan', "{$n} tagihan bulanan belum dibayar dibuat untuk {$ta->nama} sampai {$this->now->locale('id')->translatedFormat('F Y')}");
     }
 
     /** tbl_kalender_akedemik (no, tanggal, kegiatan) -> kalender_akademik. */

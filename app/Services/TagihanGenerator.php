@@ -30,6 +30,9 @@ class TagihanGenerator
 
         $dibuat = 0;
         foreach ($this->santriBerkelas($ta, $hanya) as [$santri, $kelas]) {
+            if ($santri->tanggal_masuk && $santri->tanggal_masuk->gt($awal->endOfMonth())) {
+                continue; // belum masuk pada bulan itu
+            }
             foreach ($jenisList as $jenis) {
                 if (! $jenis->berlakuUntuk($santri, $awal)) {
                     continue;

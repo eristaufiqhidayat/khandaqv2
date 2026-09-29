@@ -53,6 +53,28 @@ class AkunService
         return $password;
     }
 
+    /**
+     * Petugas menetapkan password baru untuk akun wali (mis. wali lupa password dan WhatsApp belum aktif).
+     * Semua sesi aplikasi wali dicabut. Bila $wajibGanti, wali harus mengganti password ini saat masuk.
+     */
+    public function aturPasswordWali(User $wali, string $baru, bool $wajibGanti, User $petugas): void
+    {
+        if (! $petugas->hasAnyPermission([Izin::AkunWaliReset->value, Izin::PenggunaKelola->value])) {
+            throw new AturanDilanggar('Tidak punya izin mengganti password wali.');
+        }
+        if (! $wali->hasRole('wali_santri')) {
+            throw new AturanDilanggar('Akun ini bukan akun wali.');
+        }
+        if (mb_strlen($baru) < self::PANJANG_MINIMAL) {
+            throw new AturanDilanggar('Password minimal '.self::PANJANG_MINIMAL.' karakter.');
+        }
+        $wali->update([
+            'password' => self::hash($baru), 'password_lama' => null,
+            'wajib_ganti_password' => $wajibGanti, 'password_diubah_pada' => CarbonImmutable::now(),
+        ]);
+        \App\Models\ApiToken::where('user_id', $wali->id)->delete();
+    }
+
     /** Cari akun untuk login: username, email, atau nomor WhatsApp (format apa pun). Dipakai web dan API aplikasi. */
     public function cariUntukMasuk(string $masukan): ?User
     {

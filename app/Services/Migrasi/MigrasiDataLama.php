@@ -60,6 +60,12 @@ class MigrasiDataLama
 
     private array $jenisId = [];        // kode jenis tagihan => id
 
+    private array $jenisBulanan = [];   // kode jenis tagihan berfrekuensi bulanan (SPP, laundry, kesehatan) => true
+
+    private array $periodeTerpakai = []; // "santri|jenis|ta" => [indeks bulan 0..11 => true]
+
+    private array $masukSantri = [];    // santri id => tanggal masuk (Y-m-d) atau null
+
     private array $rekeningId = [];     // KAS/BSI => id
 
     private array $danaId = [];         // kode dana => id
@@ -301,6 +307,7 @@ class MigrasiDataLama
                 'status' => $status, 'kode_unik' => $kode, 'catatan' => $this->kosongNull($r->keterangan),
                 'created_at' => $this->now, 'updated_at' => $this->now,
             ]);
+            $this->masukSantri[$this->santriMap[$r->id_siswa]] = $this->tgl($r->tanggal_masuk);
             $this->masuk('data_siswa');
         }
         // Santri aktif tanpa kode unik mendapat kode baru agar transfer BSI bisa dicocokkan.
@@ -816,6 +823,8 @@ class MigrasiDataLama
     private function muatReferensi(): void
     {
         $this->jenisId = DB::table('jenis_tagihan')->pluck('id', 'kode')->all();
+        $this->jenisBulanan = DB::table('jenis_tagihan')->where('frekuensi', 'bulanan')->pluck('kode')->flip()->map(fn () => true)->all();
+        $this->periodeTerpakai = [];
         $this->rekeningId = DB::table('rekening')->pluck('id', 'kode')->all();
         $this->danaId = DB::table('dana')->pluck('id', 'kode')->all();
         foreach (['SPP', 'LAUNDRY', 'KESEHATAN', 'INFAK', 'PTS', 'PAS', 'DU', 'DSB', 'BUKU', 'KEGIATAN'] as $k) {
@@ -857,13 +866,44 @@ class MigrasiDataLama
         $ta = $this->taId($tgl->month >= 7 ? $tgl->year : $tgl->year - 1);
         $nomor = $tgl->month >= 7 ? 1 : 2;
 
+        $periode = isset($this->jenisBulanan[$jenis]) ? $this->pilihPeriode($santri, $jenis, $ta, $tgl) : null;
+
         return [
             'santri_id' => $santri, 'jenis_tagihan_id' => $this->jenisId[$jenis], 'tahun_ajaran_id' => $ta,
-            'semester_id' => $this->semByTaNomor["{$ta}|{$nomor}"][0], 'periode' => null,
+            'semester_id' => $this->semByTaNomor["{$ta}|{$nomor}"][0], 'periode' => $periode,
             'keterangan' => mb_substr($ket, 0, 200), 'nominal' => max(0, $rp), 'potongan' => 0, 'terbayar' => max(0, $rp),
             'jatuh_tempo' => $tgl->toDateString(), 'status' => 'lunas', 'legacy_ref' => $ref, 'dibuat_oleh' => $this->adminId,
             'created_at' => $this->now, 'updated_at' => $this->now,
         ];
+    }
+
+    /**
+     * Bulan yang dibayar oleh potongan bulanan lama (SPP, laundry, kesehatan). Aplikasi lama tidak menyimpan bulannya,
+     * jadi diperkirakan: bulan tanggal potong; bila bulan itu sudah terisi (bayar dobel/tunggakan), bulan kosong
+     * paling awal sebelumnya (tidak sebelum santri masuk); bila tidak ada, bulan kosong berikutnya. Tanpa ini
+     * kisi Status pembayaran menampilkan "belum terbit" untuk semua bulan, dan generator tagihan bulanan akan
+     * membuat tagihan ganda untuk bulan yang sebenarnya sudah dibayar.
+     */
+    private function pilihPeriode(int $santri, string $jenis, int $ta, CarbonImmutable $tgl): ?string
+    {
+        $mulaiTa = CarbonImmutable::create($tgl->month >= 7 ? $tgl->year : $tgl->year - 1, 7, 1);
+        $target = ($tgl->year - $mulaiTa->year) * 12 + $tgl->month - 7;
+        $batasBawah = 0;
+        if ($masuk = $this->masukSantri[$santri] ?? null) {
+            $m = CarbonImmutable::parse($masuk)->startOfMonth();
+            $batasBawah = max(0, min($target, ($m->year - $mulaiTa->year) * 12 + $m->month - 7));
+        }
+        $kunci = "{$santri}|{$jenis}|{$ta}";
+        $calon = array_merge([$target], $target - 1 >= $batasBawah ? range($target - 1, $batasBawah) : [], $target < 11 ? range($target + 1, 11) : []);
+        foreach ($calon as $i) {
+            if ($i >= $batasBawah && $i <= 11 && ! isset($this->periodeTerpakai[$kunci][$i])) {
+                $this->periodeTerpakai[$kunci][$i] = true;
+
+                return $mulaiTa->addMonths($i)->toDateString();
+            }
+        }
+
+        return null; // lebih dari 12 potongan dalam satu tahun ajaran: biarkan tanpa bulan
     }
 
     /** @return array<string,int> legacy_ref => id */

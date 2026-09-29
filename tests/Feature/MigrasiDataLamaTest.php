@@ -63,6 +63,17 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $this->assertSame($rek['total_saldo_lama'], $rek['total_saldo_baru']);
         $this->assertSame(4, TabunganMutasi::where('legacy_kode', 'TDKOR')->where('status', 'ditolak')->count(), 'TDKOR disalin, tidak dihitung');
         $this->assertGreaterThan(1500, count($file), 'raport disalin menjadi file');
+
+        // Potongan SPP/laundry/kesehatan lama diberi bulan (periode) agar tampil di kisi Status pembayaran.
+        $spp = \App\Models\JenisTagihan::kode('SPP');
+        $tanpaBulan = \App\Models\Tagihan::where('jenis_tagihan_id', $spp->id)->whereNull('periode')->count();
+        $total = \App\Models\Tagihan::where('jenis_tagihan_id', $spp->id)->count();
+        fwrite(STDERR, "SPP lama: {$total} tagihan, tanpa bulan {$tanpaBulan}\n");
+        $this->assertGreaterThan(1000, $total);
+        $this->assertLessThan($total * 0.02, $tanpaBulan, 'hampir semua potongan SPP mendapat bulan');
+        $baris = (new \App\Services\LaporanTagihan())->rekapSpp(\App\Models\TahunAjaran::untukTanggal(\Carbon\CarbonImmutable::create(2025, 7, 1)), \Carbon\CarbonImmutable::create(2026, 6, 30));
+        $lunas = collect($baris)->sum(fn ($b) => collect($b['bulan'])->filter(fn ($v) => $v === \App\Services\LaporanTagihan::LUNAS)->count());
+        $this->assertGreaterThan(500, $lunas, 'kisi SPP 2025/2026 terisi dari data lama');
     }
 
     public function test_password_wali_dari_database_login_lama_ikut_terbawa(): void

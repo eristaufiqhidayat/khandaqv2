@@ -34,6 +34,7 @@ class PenggunaController extends Controller
         $tab = $bolehStaf && $request->query('tab') !== 'wali' ? 'staf' : 'wali';
         $data = [
             'tab' => $tab, 'bolehStaf' => $bolehStaf, 'bolehKelolaWali' => $saya->hasPermissionTo(Izin::AkunWaliReset->value),
+            'bolehUbahWali' => $saya->hasAnyPermission([Izin::PenggunaKelola->value, Izin::SantriKelola->value, Izin::AkunWaliReset->value]),
             'peran' => self::PERAN, 'waOn' => $this->akses->aktif(),
         ];
         if ($tab === 'staf') {

@@ -82,7 +82,7 @@ class DataWaliService
      */
     public function ubahOlehPetugas(User $wali, array $data, array $hubungan, User $petugas): User
     {
-        if (! $petugas->hasPermissionTo(Izin::SantriKelola->value) && ! $petugas->hasPermissionTo(Izin::AkunWaliReset->value)) {
+        if (! $petugas->hasAnyPermission([Izin::PenggunaKelola->value, Izin::SantriKelola->value, Izin::AkunWaliReset->value])) {
             throw new AturanDilanggar('Tidak punya izin mengubah data wali.');
         }
         if (! $wali->hasRole('wali_santri')) {

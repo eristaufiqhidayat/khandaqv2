@@ -1,0 +1,6 @@
+#!/bin/sh
+# Pipe cPanel untuk bsi1@lembaharafah.com: Email > Forwarders > Add Forwarder > "Pipe to a Program" > laravel/bin/bsi-email
+# Ubah PHP di bawah bila lokasinya berbeda. Tidak boleh mencetak apa pun (akan dipantulkan ke pengirim).
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PHP="${KHANDAQ_PHP:-/opt/cpanel/ea-php84/root/usr/bin/php}"
+exec "$PHP" "$DIR/artisan" khandaq:bsi-email --stdin >/dev/null 2>&1

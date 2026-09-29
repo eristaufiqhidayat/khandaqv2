@@ -22,6 +22,9 @@ return [
             'saldo' => env('BSI_KOLOM_SALDO', 'saldo'),
         ],
         'format_tanggal' => env('BSI_FORMAT_TANGGAL', 'd/m/Y H:i'),
+        // Folder Maildir akun penerima notifikasi email BSI (cPanel: /home/USER/mail/DOMAIN/AKUN).
+        // Bila diisi, penjadwal membaca email baru tiap 5 menit. Lihat khandaq:bsi-email.
+        'email_maildir' => env('BSI_EMAIL_MAILDIR'),
     ],
 
     // Toleransi selisih tanggal antara laporan setoran wali dan mutasi BSI.

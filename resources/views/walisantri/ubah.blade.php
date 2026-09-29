@@ -27,4 +27,20 @@
   @endif
   <div class="row"><button class="btn p">Simpan</button><a class="btn" href="{{ $kembali }}">Batal</a></div>
 </form>
+
+@if ($bolehPassword)
+<form class="card stack" method="post" action="{{ route('walisantri.password', $wali) }}" style="max-width:760px;margin-top:16px" autocomplete="off">
+  @csrf <input type="hidden" name="kembali" value="{{ $kembali }}">
+  <h2>Ganti password wali</h2>
+  <p class="hint" style="margin:0">Untuk wali yang lupa password. Sampaikan password baru langsung ke wali. Aplikasi Android wali ini akan diminta masuk ulang.
+    @if ($wali->telepon)Bila WhatsApp sudah aktif, <b>Reset password</b> di tab Wali santri mengirim password acak ke WA-nya tanpa perlu diketik.@endif</p>
+  @error('password')<div class="alert err" role="alert">{{ $message }}</div>@enderror
+  <div class="grid g2">
+    <div class="field"><label for="pw">Password baru</label><input id="pw" name="password" type="password" required minlength="8" maxlength="200" autocomplete="new-password"></div>
+    <div class="field"><label for="pw2">Ulangi password baru</label><input id="pw2" name="password_confirmation" type="password" required minlength="8" maxlength="200" autocomplete="new-password"></div>
+  </div>
+  <label class="row" style="gap:8px"><input type="checkbox" name="wajib_ganti" value="1" checked> Wajib diganti wali saat masuk berikutnya</label>
+  <div><button class="btn p" onclick="return confirm('Ganti password {{ addslashes($wali->name) }}?')">Ganti password</button></div>
+</form>
+@endif
 @endsection

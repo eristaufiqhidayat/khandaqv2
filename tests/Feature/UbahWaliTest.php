@@ -84,4 +84,29 @@ class UbahWaliTest extends KhandaqTestCase
         Artisan::call('khandaq:wali-contoh', ['--hapus' => true]);
         $this->assertSame(0, User::where('username', 'walicontoh')->count());
     }
+
+    public function test_petugas_mengganti_password_wali(): void
+    {
+        $w = $this->waliAkun('081200000011', $this->santri());
+        [, $token] = \App\Models\ApiToken::terbitkan($w, 'HP');
+        $admin = $this->staf('admin', 'admin');
+
+        $this->actingAs($admin)->get(route('walisantri.edit', $w))->assertOk()->assertSee('Ganti password wali');
+        $this->post(route('walisantri.password', $w), ['password' => 'pendek', 'password_confirmation' => 'pendek'])->assertSessionHasErrors('password');
+        $this->post(route('walisantri.password', $w), ['password' => 'barubaru1', 'password_confirmation' => 'lain12345'])->assertSessionHasErrors('password');
+        $this->post(route('walisantri.password', $w), ['password' => 'barubaru1', 'password_confirmation' => 'barubaru1', 'wajib_ganti' => '1',
+            'kembali' => route('pengguna.index', ['tab' => 'wali'])])->assertRedirect(route('pengguna.index', ['tab' => 'wali']));
+        $w->refresh();
+        $this->assertTrue(password_verify('barubaru1', $w->password));
+        $this->assertTrue($w->wajib_ganti_password);
+        $this->assertSame(0, \App\Models\ApiToken::where('user_id', $w->id)->count(), 'sesi aplikasi dicabut');
+
+        // Admin Office juga boleh; keuangan tidak; akun staf tidak bisa lewat form wali.
+        $this->actingAs($this->staf('admin_office', 'office'))->post(route('walisantri.password', $w),
+            ['password' => 'lagibaru12', 'password_confirmation' => 'lagibaru12'])->assertSessionHas('status');
+        $this->assertFalse($w->fresh()->wajib_ganti_password);
+        $this->post(route('walisantri.password', $admin), ['password' => 'lagibaru12', 'password_confirmation' => 'lagibaru12'])->assertNotFound();
+        $this->actingAs($this->staf('keuangan', 'keu'))->post(route('walisantri.password', $w),
+            ['password' => 'lagibaru12', 'password_confirmation' => 'lagibaru12'])->assertForbidden();
+    }
 }

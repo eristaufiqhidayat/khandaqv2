@@ -65,6 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:'.Izin::PenggunaKelola->value.'|'.Izin::SantriKelola->value.'|'.Izin::AkunWaliReset->value)->prefix('wali-santri')->name('walisantri.')->group(function () {
         Route::get('/{wali}/ubah', [WaliSantriController::class, 'edit'])->name('edit');
         Route::put('/{wali}', [WaliSantriController::class, 'update'])->name('update');
+        Route::post('/{wali}/password', [WaliSantriController::class, 'password'])->name('password');
     });
 
     // Staf: setiap menu dijaga IZIN-nya, sama dengan yang menentukan menu tampil (config/khandaq-menu.php).

@@ -82,7 +82,7 @@ class NotifikasiEmailBsi
             'rekening' => $rek[1],
             'nominal' => $nominal,
             'tanggal' => CarbonImmutable::create((int) $tgl[3], $bulan, (int) $tgl[1], (int) ($tgl[4] ?? 0), (int) ($tgl[5] ?? 0), 0, 'Asia/Jakarta')->setTimezone(config('app.timezone')), // jam di email = WIB
-            'referensi' => strtoupper($ref[1]),
+            'referensi' => BankMutasiMatcher::referensi($ref[1]),
         ];
     }
 
@@ -101,7 +101,10 @@ class NotifikasiEmailBsi
         if (is_string($rekening)) {
             return $this->hasil(self::DITOLAK, $rekening);
         }
-        if (BankMutasi::where('rekening_id', $rekening->id)->where('no_referensi', $n['referensi'])->exists()) {
+        $debet = $n['arah'] === 'debit' ? $n['nominal'] : 0;
+        $kredit = $n['arah'] === 'kredit' ? $n['nominal'] : 0;
+        // Satu FT bisa berisi transfer + biaya admin (nominal beda), jadi kuncinya FT + nominal.
+        if (BankMutasi::where('rekening_id', $rekening->id)->where('no_referensi', $n['referensi'])->where('debet', $debet)->where('kredit', $kredit)->exists()) {
             return $this->hasil(self::DUPLIKAT, "{$n['referensi']} sudah tercatat.");
         }
         if (! preg_match('/^From:.*@'.preg_quote(self::DOMAIN, '/').'\b/mi', str_replace("\r\n", "\n", $raw))
@@ -111,12 +114,11 @@ class NotifikasiEmailBsi
             return $this->hasil(self::DITOLAK, "{$n['referensi']}: tanda tangan email bukan dari ".self::DOMAIN.', diabaikan.');
         }
 
-        $mutasi = DB::transaction(function () use ($n, $rekening) {
+        $mutasi = DB::transaction(function () use ($n, $rekening, $debet, $kredit) {
             $baris = BankMutasi::create([
                 'rekening_id' => $rekening->id, 'tanggal' => $n['tanggal'], 'no_referensi' => $n['referensi'],
                 'deskripsi' => 'Notifikasi email BSI',
-                'debet' => $n['arah'] === 'debit' ? $n['nominal'] : 0,
-                'kredit' => $n['arah'] === 'kredit' ? $n['nominal'] : 0,
+                'debet' => $debet, 'kredit' => $kredit,
                 'status' => StatusBankMutasi::Baru,
             ]);
             $this->matcher->cocokkan($baris);

@@ -686,12 +686,13 @@ class MigrasiDataLama
         $sudah = [];
         foreach ($rows as $r) {
             $ref = trim((string) $r->no_refrensi);
-            if ($ref === '' || isset($sudah[$ref])) {
+            $kunci = $ref.'|'.(int) $r->debet.'|'.(int) $r->kredit; // FT sama bisa untuk transfer + biaya admin
+            if ($ref === '' || isset($sudah[$kunci])) {
                 $this->lewati('tbl_mutasi_bsi', 'no referensi kosong/ganda');
 
                 continue;
             }
-            $sudah[$ref] = true;
+            $sudah[$kunci] = true;
             DB::table('bank_mutasi')->insert(['bank_impor_id' => $impor, 'rekening_id' => $this->rekeningId['BSI'], 'tanggal' => $this->tglJam($r->tanggal) ?? '2021-01-01 00:00:00',
                 'no_referensi' => $ref, 'deskripsi' => $r->deskripsi, 'debet' => (int) $r->debet, 'kredit' => (int) $r->kredit, 'saldo' => (int) $r->saldo_rill,
                 'status' => 'diabaikan', 'catatan' => 'Arsip dari aplikasi lama, tidak dicocokkan ulang', 'created_at' => $this->now, 'updated_at' => $this->now]);

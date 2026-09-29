@@ -94,7 +94,7 @@
           <td>@switch($m->status->value)
             @case('pending')<span class="chip c-warn">Menunggu verifikasi</span>@break
             @case('ditolak')<span class="chip c-crit">Ditolak</span>@break
-            @default<span class="chip c-good">Masuk saldo</span>@endswitch</td>
+            @default @if ($m->arah->value === 'kredit')<span class="chip c-good">Masuk saldo</span>@else<span class="chip">Dipotong dari saldo</span>@endif @endswitch</td>
           <td class="r rp">{{ $m->arah->value === 'kredit' ? $rp($m->nominal) : '' }}</td>
           <td class="r rp">{{ $m->arah->value === 'debit' ? $rp($m->nominal) : '' }}</td>
         </tr>

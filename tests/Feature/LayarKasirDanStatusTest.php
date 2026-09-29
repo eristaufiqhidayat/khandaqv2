@@ -56,6 +56,8 @@ class LayarKasirDanStatusTest extends KhandaqTestCase
 
         $this->post(route('kasir.tarik', $s), ['nominal' => 50000])->assertSessionHas('status');
         $this->assertSame(150000, $s->saldo());
+        // Setoran = "Masuk saldo"; penarikan/potongan = "Dipotong dari saldo".
+        $this->get(route('kasir.index', ['santri' => $s->id]))->assertSee('Masuk saldo')->assertSee('Dipotong dari saldo');
 
         $this->from(route('kasir.index', ['santri' => $s->id]))
             ->post(route('kasir.tarik', $s), ['nominal' => 500000])->assertSessionHasErrors(['kasir' => 'Saldo tidak cukup untuk penarikan.']);

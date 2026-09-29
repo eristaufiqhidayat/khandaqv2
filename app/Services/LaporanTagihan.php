@@ -54,13 +54,14 @@ class LaporanTagihan
                     continue;
                 }
                 $lewat = $t->jatuh_tempo->toDateString() < $hari;
+                $lunas = $t->status === StatusTagihan::Lunas || $t->sisa() === 0;
                 $sel[$k] = match (true) {
-                    $t->status === StatusTagihan::Lunas => self::LUNAS,
+                    $lunas => self::LUNAS,
                     $lewat => self::TERLAMBAT,
                     $t->status === StatusTagihan::Sebagian => self::SEBAGIAN,
                     default => self::BELUM_JATUH_TEMPO,
                 };
-                if ($lewat && $t->status !== StatusTagihan::Lunas) {
+                if ($lewat && ! $lunas) {
                     $terlambat++;
                     $sisa += $t->sisa();
                 }

@@ -63,6 +63,8 @@ class AksesRaport
         return $santri->tunggakan($saatIni)
             ->whereHas('jenisTagihan', fn ($q) => $q->where('wajib_lunas_untuk_raport', true))
             ->orderBy('jatuh_tempo')
-            ->get();
+            ->get()
+            ->filter(fn (Tagihan $t) => $t->sisa() > 0)
+            ->values();
     }
 }

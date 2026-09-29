@@ -168,10 +168,12 @@ class TagihanGenerator
         }
 
         $keringanan = $this->keringananUntuk($santri, $jenis, $ta);
+        $potongan = $keringanan?->potonganUntuk($data['nominal']) ?? 0;
         Tagihan::create($kunci + $data + [
-            'potongan' => $keringanan?->potonganUntuk($data['nominal']) ?? 0,
+            'potongan' => $potongan,
             'keringanan_id' => $keringanan?->id,
-            'status' => StatusTagihan::Belum,
+            // Beasiswa/diskon penuh (atau tarif Rp0): tidak ada yang harus dibayar, langsung lunas.
+            'status' => $data['nominal'] - $potongan <= 0 ? StatusTagihan::Lunas : StatusTagihan::Belum,
         ]);
 
         return true;

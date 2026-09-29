@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('perangkat', 100)->nullable();
             $table->char('token_hash', 64)->unique();
             $table->timestamp('terakhir_dipakai_pada')->nullable();
-            $table->timestamp('kedaluwarsa_pada');
+            $table->dateTime('kedaluwarsa_pada'); // dateTime: MySQL strict menolak TIMESTAMP NOT NULL tanpa default
             $table->timestamps();
         });
     }

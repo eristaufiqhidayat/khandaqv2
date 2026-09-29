@@ -175,4 +175,25 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $this->assertSame('2027-01-01', $pilih->invoke($svc, 10, 'SPP', $ta, $tgl('2027-03-01')));
         $this->assertSame('2026-07-01', $pilih->invoke($svc, 10, 'LAUNDRY', $ta, $tgl('2026-11-01')));
     }
+
+    public function test_bulan_belum_dipotong_menjadi_tunggakan_tahun_berjalan(): void
+    {
+        \Carbon\CarbonImmutable::setTestNow('2026-06-15 10:00');
+        try {
+            [$run] = $this->jalankan();
+        } finally {
+            \Carbon\CarbonImmutable::setTestNow();
+        }
+        $this->assertSame([], $run->rekonsiliasi['berbeda'], 'saldo tetap sama: tagihan baru belum dibayar, tidak memotong saldo');
+        $this->assertGreaterThan(0, $run->ringkasan['tagihan bulan berjalan']['masuk']);
+        $ta = \App\Models\TahunAjaran::untukTanggal(\Carbon\CarbonImmutable::create(2025, 7, 1));
+        $baris = (new \App\Services\LaporanTagihan())->rekapSpp($ta, \Carbon\CarbonImmutable::create(2026, 6, 15));
+        $menunggak = collect($baris)->filter(fn ($b) => $b['bulan_terlambat'] > 0);
+        fwrite(STDERR, "Menunggak SPP 2025/2026 per 15 Jun 2026: {$menunggak->count()} santri, Rp".number_format($menunggak->sum('sisa_terlambat'), 0, ',', '.')."\n");
+        $this->assertGreaterThan(0, $menunggak->count());
+        // Santri tidak ditagih untuk bulan sebelum ia masuk.
+        foreach (\App\Models\Tagihan::whereNull('legacy_ref')->with('santri')->get() as $t) {
+            $this->assertTrue(! $t->santri->tanggal_masuk || $t->periode->endOfMonth()->gte($t->santri->tanggal_masuk), "tagihan {$t->id} sebelum santri masuk");
+        }
+    }
 }

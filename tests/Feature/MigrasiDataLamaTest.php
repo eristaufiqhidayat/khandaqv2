@@ -70,7 +70,7 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $total = \App\Models\Tagihan::where('jenis_tagihan_id', $spp->id)->count();
         fwrite(STDERR, "SPP lama: {$total} tagihan, tanpa bulan {$tanpaBulan}\n");
         $this->assertGreaterThan(1000, $total);
-        $this->assertLessThan($total * 0.02, $tanpaBulan, 'hampir semua potongan SPP mendapat bulan');
+        $this->assertLessThan($total * 0.03, $tanpaBulan, 'hampir semua potongan SPP mendapat bulan');
         $baris = (new \App\Services\LaporanTagihan())->rekapSpp(\App\Models\TahunAjaran::untukTanggal(\Carbon\CarbonImmutable::create(2025, 7, 1)), \Carbon\CarbonImmutable::create(2026, 6, 30));
         $lunas = collect($baris)->sum(fn ($b) => collect($b['bulan'])->filter(fn ($v) => $v === \App\Services\LaporanTagihan::LUNAS)->count());
         $this->assertGreaterThan(500, $lunas, 'kisi SPP 2025/2026 terisi dari data lama');
@@ -157,5 +157,22 @@ class MigrasiDataLamaTest extends KhandaqTestCase
         $r = $run->ringkasan['data_siswa.image'];
         $this->assertSame(1, $r['masuk']);
         $this->assertSame($r['sumber'], $r['masuk'] + $r['dilewati'], 'isi bukan gambar (mis. data uji "ADA") dicatat dilewati');
+    }
+
+    public function test_potongan_bulanan_dihitung_per_semester_dari_awal_semester(): void
+    {
+        $svc = new MigrasiDataLama('lama', 'paralel');
+        $pilih = new \ReflectionMethod($svc, 'pilihPeriode');
+        $ta = 1;
+        $tgl = fn (string $d) => \Carbon\CarbonImmutable::parse($d);
+        // Dibayar di akhir semester: 3 potongan Desember = Juli, Agustus, September.
+        $this->assertSame(['2026-07-01', '2026-08-01', '2026-09-01'],
+            array_map(fn ($d) => $pilih->invoke($svc, 10, 'SPP', $ta, $tgl($d)), ['2026-12-05', '2026-12-05', '2026-12-20']));
+        // Dibayar di muka: potongan Juli 3 kali untuk santri lain = Juli–September juga.
+        $this->assertSame(['2026-07-01', '2026-08-01', '2026-09-01'],
+            array_map(fn ($d) => $pilih->invoke($svc, 11, 'SPP', $ta, $tgl($d)), ['2026-07-02', '2026-07-02', '2026-07-02']));
+        // Semester genap mulai Januari; tiap jenis dihitung sendiri.
+        $this->assertSame('2027-01-01', $pilih->invoke($svc, 10, 'SPP', $ta, $tgl('2027-03-01')));
+        $this->assertSame('2026-07-01', $pilih->invoke($svc, 10, 'LAUNDRY', $ta, $tgl('2026-11-01')));
     }
 }

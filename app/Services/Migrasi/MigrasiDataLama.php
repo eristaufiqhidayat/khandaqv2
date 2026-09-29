@@ -878,32 +878,31 @@ class MigrasiDataLama
     }
 
     /**
-     * Bulan yang dibayar oleh potongan bulanan lama (SPP, laundry, kesehatan). Aplikasi lama tidak menyimpan bulannya,
-     * jadi diperkirakan: bulan tanggal potong; bila bulan itu sudah terisi (bayar dobel/tunggakan), bulan kosong
-     * paling awal sebelumnya (tidak sebelum santri masuk); bila tidak ada, bulan kosong berikutnya. Tanpa ini
-     * kisi Status pembayaran menampilkan "belum terbit" untuk semua bulan, dan generator tagihan bulanan akan
-     * membuat tagihan ganda untuk bulan yang sebenarnya sudah dibayar.
+     * Bulan yang dibayar oleh potongan bulanan lama (SPP, laundry, kesehatan). Aplikasi lama tidak menyimpan bulannya;
+     * ia menghitung JUMLAH potongan per semester (Juli–Desember, Januari–Juni): 3 kali potong dalam satu semester
+     * = 3 bulan lunas, entah dibayar di muka atau di akhir. Maka setiap potongan mengisi bulan kosong paling awal
+     * di semester tanggal potong (tidak sebelum santri masuk); bila semester itu sudah penuh, bulan kosong
+     * berikutnya di tahun ajaran yang sama. Lebih dari itu dibiarkan tanpa bulan.
      */
     private function pilihPeriode(int $santri, string $jenis, int $ta, CarbonImmutable $tgl): ?string
     {
         $mulaiTa = CarbonImmutable::create($tgl->month >= 7 ? $tgl->year : $tgl->year - 1, 7, 1);
-        $target = ($tgl->year - $mulaiTa->year) * 12 + $tgl->month - 7;
+        $awalSemester = $tgl->month >= 7 ? 0 : 6;
         $batasBawah = 0;
         if ($masuk = $this->masukSantri[$santri] ?? null) {
             $m = CarbonImmutable::parse($masuk)->startOfMonth();
-            $batasBawah = max(0, min($target, ($m->year - $mulaiTa->year) * 12 + $m->month - 7));
+            $batasBawah = max(0, min($awalSemester + 5, ($m->year - $mulaiTa->year) * 12 + $m->month - 7));
         }
         $kunci = "{$santri}|{$jenis}|{$ta}";
-        $calon = array_merge([$target], $target - 1 >= $batasBawah ? range($target - 1, $batasBawah) : [], $target < 11 ? range($target + 1, 11) : []);
-        foreach ($calon as $i) {
-            if ($i >= $batasBawah && $i <= 11 && ! isset($this->periodeTerpakai[$kunci][$i])) {
+        for ($i = max($awalSemester, $batasBawah); $i <= 11; $i++) {
+            if (! isset($this->periodeTerpakai[$kunci][$i])) {
                 $this->periodeTerpakai[$kunci][$i] = true;
 
                 return $mulaiTa->addMonths($i)->toDateString();
             }
         }
 
-        return null; // lebih dari 12 potongan dalam satu tahun ajaran: biarkan tanpa bulan
+        return null;
     }
 
     /** @return array<string,int> legacy_ref => id */

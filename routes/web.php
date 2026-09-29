@@ -174,6 +174,9 @@ Route::middleware('auth')->group(function () {
     });
     Route::middleware($izin(Izin::PenggunaKelola))->prefix('pengguna')->name('pengguna.')->group(function () {
         Route::post('/', [PenggunaController::class, 'store'])->name('store');
+        Route::get('/{user}/ubah', [PenggunaController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [PenggunaController::class, 'update'])->name('update');
+        Route::post('/{user}/password', [PenggunaController::class, 'password'])->name('password');
         Route::post('/{user}/peran', [PenggunaController::class, 'peran'])->name('peran');
         Route::post('/{user}/reset', [PenggunaController::class, 'reset'])->name('reset');
         Route::post('/{user}/aktif', [PenggunaController::class, 'aktif'])->name('aktif');

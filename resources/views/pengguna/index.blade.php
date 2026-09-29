@@ -13,7 +13,7 @@
 @endif
 </div>
 @error('pengguna')<div class="alert err" role="alert">{{ $message }}</div>@enderror
-@unless ($waOn)<div class="note warn" style="margin-bottom:14px">WhatsApp belum diatur, jadi password tidak bisa dikirim. Sementara, reset dari server: <code>php artisan khandaq:reset-password &lt;username&gt;</code>.</div>@endunless
+@unless ($waOn)<div class="note warn" style="margin-bottom:14px">WhatsApp belum diatur, jadi password acak tidak bisa dikirim. Sementara, ganti password lewat tombol <b>Ubah</b> lalu sampaikan langsung ke pemilik akun (wajib diganti saat masuk).</div>@endunless
 
 @if ($tab === 'staf')
 <div class="grid" style="grid-template-columns:minmax(0,1fr) 320px;align-items:start">
@@ -25,9 +25,11 @@
           @unless ($u->roles->first())<option value="">Tanpa peran</option>@endunless
           @foreach ($peran as $k => $l)<option value="{{ $k }}" @selected($u->hasRole($k))>{{ $l }}</option>@endforeach</select></form>@endif</td>
       <td>@if ($u->aktif)<span class="chip c-good">Aktif</span>@else<span class="chip c-crit">Nonaktif</span>@endif</td>
-      <td class="r">@unless ($u->is(auth()->user()))<div class="row" style="justify-content:flex-end">
+      <td class="r"><div class="row" style="justify-content:flex-end">
+        <a class="btn sm" href="{{ route('pengguna.edit', $u) }}">Ubah</a>
+        @unless ($u->is(auth()->user()))
         <form method="post" action="{{ route('pengguna.reset', $u) }}" onsubmit="return confirm('Reset password {{ $u->name }}?')">@csrf<button class="btn sm">Reset password</button></form>
-        <form method="post" action="{{ route('pengguna.aktif', $u) }}">@csrf<button class="btn sm">{{ $u->aktif ? 'Nonaktifkan' : 'Aktifkan' }}</button></form></div>@endunless</td></tr>
+        <form method="post" action="{{ route('pengguna.aktif', $u) }}">@csrf<button class="btn sm">{{ $u->aktif ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>@endunless</div></td></tr>
   @endforeach
   </tbody></table></div></div>
   <form class="card stack" method="post" action="{{ route('pengguna.store') }}">@csrf<h2>Tambah staf</h2>

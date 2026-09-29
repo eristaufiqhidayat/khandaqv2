@@ -109,9 +109,52 @@ class PenggunaController extends Controller
         return back()->with('status', "{$user->name} sekarang ".self::PERAN[$d['peran']].'.');
     }
 
+    public function edit(User $user)
+    {
+        $this->stafSaja($user);
+
+        return view('pengguna.ubah', ['u' => $user]);
+    }
+
+    public function update(Request $request, User $user): RedirectResponse
+    {
+        $this->stafSaja($user);
+        $d = $request->validate([
+            'name' => 'required|string|max:100',
+            'username' => ['required', 'alpha_dash', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
+            'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($user->id)],
+            'telepon' => 'nullable|string|max:20',
+        ]);
+        $d['telepon'] = filled($d['telepon'] ?? null) ? \App\Services\PendaftaranService::normalTelepon($d['telepon']) : null;
+        if ($d['telepon'] && User::where(fn ($q) => $q->where('telepon', $d['telepon'])->orWhere('username', $d['telepon']))->whereKeyNot($user->id)->exists()) {
+            return back()->withInput()->withErrors(['pengguna' => "Nomor {$d['telepon']} sudah dipakai akun lain."]);
+        }
+        $user->update($d);
+
+        return redirect()->route('pengguna.index')->with('status', "Data {$user->name} disimpan.");
+    }
+
+    public function password(Request $request, User $user): RedirectResponse
+    {
+        $this->stafSaja($user);
+        $d = $request->validate(['password' => 'required|string|confirmed|max:200'], ['password.confirmed' => 'Ulangi password tidak sama.']);
+        try {
+            $this->akun->aturPasswordStaf($user, $d['password'], $request->boolean('wajib_ganti'), $request->user());
+        } catch (AturanDilanggar $e) {
+            return back()->withErrors(['password' => $e->getMessage()]);
+        }
+
+        return redirect()->route('pengguna.index')->with('status', "Password {$user->name} diganti."
+            .($request->boolean('wajib_ganti') ? ' Wajib diganti saat masuk berikutnya.' : ''));
+    }
+
     public function reset(Request $request, User $user): RedirectResponse
     {
         $this->stafSaja($user);
+        if (! $this->akses->aktif()) {
+            // Tanpa WhatsApp password acak tidak bisa sampai ke pemiliknya; jangan kunci akunnya.
+            return back()->withErrors(['pengguna' => "WhatsApp belum aktif, jadi password acak tidak bisa dikirim. Gunakan Ubah → Ganti password untuk {$user->name}."]);
+        }
         try {
             $pw = $this->akun->resetPassword($user, $request->user());
         } catch (AturanDilanggar $e) {
@@ -141,6 +184,9 @@ class PenggunaController extends Controller
     public function waliReset(Request $request, User $user): RedirectResponse
     {
         $this->waliSaja($user);
+        if (! $this->akses->aktif()) {
+            return back()->withErrors(['pengguna' => "WhatsApp belum aktif, jadi password acak tidak bisa dikirim. Gunakan Ubah → Ganti password wali untuk {$user->name}."]);
+        }
         try {
             $pw = $this->akun->resetPassword($user, $request->user());
         } catch (AturanDilanggar $e) {

@@ -75,6 +75,25 @@ class AkunService
         \App\Models\ApiToken::where('user_id', $wali->id)->delete();
     }
 
+    /** Admin menetapkan password akun staf lain (mis. lupa password dan WhatsApp belum aktif). */
+    public function aturPasswordStaf(User $staf, string $baru, bool $wajibGanti, User $petugas): void
+    {
+        Otorisasi::pastikan($petugas, Izin::PenggunaKelola);
+        if ($staf->hasRole('wali_santri')) {
+            throw new AturanDilanggar('Akun wali diubah dari tab Wali santri.');
+        }
+        if ($staf->is($petugas)) {
+            throw new AturanDilanggar('Gunakan menu Ganti password untuk akun sendiri.');
+        }
+        if (mb_strlen($baru) < self::PANJANG_MINIMAL) {
+            throw new AturanDilanggar('Password minimal '.self::PANJANG_MINIMAL.' karakter.');
+        }
+        $staf->update([
+            'password' => self::hash($baru), 'password_lama' => null,
+            'wajib_ganti_password' => $wajibGanti, 'password_diubah_pada' => CarbonImmutable::now(),
+        ]);
+    }
+
     /** Cari akun untuk login: username, email, atau nomor WhatsApp (format apa pun). Dipakai web dan API aplikasi. */
     public function cariUntukMasuk(string $masukan): ?User
     {

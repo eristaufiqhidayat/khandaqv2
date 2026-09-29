@@ -55,6 +55,11 @@ class DataWaliService
             foreach ($anak as $santri) {
                 $wali->anak()->syncWithoutDetaching([$santri->id => ['hubungan' => $hubungan]]);
             }
+            // Akun lama yang sempat nonaktif (mis. kakak sudah lulus/keluar lalu tautannya dilepas) aktif lagi
+            // karena kini punya anak aktif. Password lama tetap berlaku.
+            if (! $wali->aktif) {
+                $wali->update(['aktif' => true]);
+            }
 
             return ['wali' => $wali, 'akun_baru' => $password !== null, 'password_awal' => $password];
         });

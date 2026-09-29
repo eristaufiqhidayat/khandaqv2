@@ -74,7 +74,9 @@ class PendaftaranDanWaliTest extends KhandaqTestCase
             $this->svc()->formulirLunas($p, 250_000, $tu);
         }
         $h1 = $this->svc()->terima($a->fresh(), $kelas, '272811', $this->tgl('2027-12-31'), $tu);
+        $h1['wali']->update(['aktif' => false]); // kakak sudah lulus, akun wali sempat dinonaktifkan
         $h2 = $this->svc()->terima($b->fresh(), $kelas, '272812', $this->tgl('2027-12-31'), $tu);
+        $this->assertTrue($h1['wali']->fresh()->aktif, 'akun wali lama aktif lagi saat adiknya ditautkan');
         $this->assertFalse($h2['akun_baru']);
         $this->assertSame($h1['wali']->id, $h2['wali']->id);
         $this->assertSame(2, $h1['wali']->anak()->count());

@@ -59,4 +59,23 @@ class PortalWaliTest extends KhandaqTestCase
         $this->actingAs(User::create(['name' => 'K', 'username' => 'keu', 'email' => 'k@test.local', 'password' => AkunService::hash('rahasia123'),
             'wajib_ganti_password' => false])->assignRole('keuangan'))->get(route('kalender.index'))->assertForbidden();
     }
+
+    public function test_lapor_transfer_dari_portal_web(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        [$anak, $lain] = [$this->santri(), $this->santri()];
+        $wali = $this->wali($anak)->assignRole('wali_santri');
+        $wali->update(['wajib_ganti_password' => false]);
+        $this->actingAs($wali)->get(route('wali.tabungan'))->assertSee(route('wali.lapor', ['anak' => $anak->id]), false);
+        $this->get(route('wali.lapor', ['anak' => $anak->id]))->assertOk()->assertSee($anak->nama)->assertDontSee($lain->nama);
+        $this->post(route('wali.lapor.store'), ['santri_id' => $anak->id, 'nominal' => 750000, 'tanggal' => now()->toDateString()])
+            ->assertSessionHasErrors('bukti');
+        $this->post(route('wali.lapor.store'), ['santri_id' => $lain->id, 'nominal' => 750000, 'tanggal' => now()->toDateString(),
+            'bukti' => \Illuminate\Http\UploadedFile::fake()->image('b.jpg')])->assertNotFound();
+        $this->post(route('wali.lapor.store'), ['santri_id' => $anak->id, 'nominal' => 750000, 'tanggal' => now()->toDateString(),
+            'bukti' => \Illuminate\Http\UploadedFile::fake()->image('b.jpg')])->assertRedirect(route('wali.tabungan'));
+        $m = \App\Models\TabunganMutasi::sole();
+        $this->assertSame(['pending', $anak->id, 'Lapor transfer wali'], [$m->status->value, $m->santri_id, $m->keterangan]);
+        $this->get(route('wali.tabungan'))->assertSee('menunggu verifikasi');
+    }
 }

@@ -19,6 +19,7 @@ return [
     ['label' => 'Impor mutasi BSI', 'route' => 'bank.index', 'izin' => Izin::BankImpor],
     ['label' => 'Tunggakan', 'route' => 'tunggakan.index', 'izin' => Izin::TunggakanPutuskan],
     ['label' => 'Pengeluaran', 'route' => 'pengeluaran.index', 'izin' => Izin::PengeluaranCatat],
+    ['label' => 'Gaji pegawai', 'route' => 'gaji.index', 'izin' => Izin::GajiKelola],
     ['label' => 'Tutup buku', 'route' => 'tutupbuku.index', 'izin' => Izin::TutupBuku],
     ['label' => 'Tarif', 'route' => 'tarif.index', 'izin' => Izin::TarifKelola],
     ['label' => 'Potongan otomatis', 'route' => 'potongan.index', 'izin' => Izin::PengecualianKelola],

@@ -32,7 +32,7 @@ class RolePermissionSeeder extends Seeder
             // Keuangan level manager: satu-satunya penyetuju beasiswa, diskon DSB/DU, dan dispensasi raport.
             'keuangan' => [Izin::KeringananSetujui, Izin::BankImpor, Izin::SetoranVerifikasi, Izin::PengeluaranCatat,
                 Izin::TutupBuku, Izin::TunggakanPutuskan, Izin::LaporanLihat, Izin::RaportLihatSemua,
-                Izin::MasterKeuanganKelola],
+                Izin::MasterKeuanganKelola, Izin::GajiKelola],
             'wali_santri' => [],
         ];
         foreach ($peran as $nama => $izin) {

@@ -34,6 +34,7 @@ enum Izin: string
     case PenggunaKelola = 'pengguna.kelola';         // buat akun staf, atur peran, reset password staf (Admin)
     case AkunWaliReset = 'akun_wali.reset';           // reset password & nonaktifkan akun wali (Admin Office)
     case MasterKeuanganKelola = 'master_keuangan.kelola'; // rekening, akun biaya, pengusul (Keuangan)
+    case GajiKelola = 'gaji.kelola';                 // data pegawai & file payroll gaji BSI (Keuangan)
 
     /** Label untuk layar Hak akses. */
     public function label(): string
@@ -66,6 +67,7 @@ enum Izin: string
             self::PenggunaKelola => 'Pengguna & peran',
             self::AkunWaliReset => 'Reset sandi & nonaktifkan akun wali',
             self::MasterKeuanganKelola => 'Rekening & akun biaya',
+            self::GajiKelola => 'Gaji pegawai (payroll BSI)',
         };
     }
 }

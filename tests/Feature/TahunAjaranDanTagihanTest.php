@@ -92,4 +92,20 @@ class TahunAjaranDanTagihanTest extends KhandaqTestCase
         return Tagihan::where('santri_id', $santriId)->where('periode', $periode)
             ->whereHas('jenisTagihan', fn ($q) => $q->where('kode', 'SPP'))->firstOrFail();
     }
+
+    public function test_beasiswa_penuh_tagihan_langsung_lunas_bukan_tunggakan(): void
+    {
+        $s = $this->santri('1 PUTRA');
+        $ta = TahunAjaran::untukTanggal($this->tgl('2025-07-01'));
+        $k = $this->keringananSvc()->ajukanBeasiswa($s, $ta, 100, null, 'Beasiswa penuh', $this->admin());
+        $this->keringananSvc()->setujui($k, $this->keuangan());
+
+        $this->generator()->bulanan($this->tgl('2025-08-01'));
+        $spp = $this->sppPeriode($s->id, '2025-08-01');
+        $this->assertSame([0, \App\Enums\StatusTagihan::Lunas], [$spp->netto(), $spp->status]);
+
+        $baris = collect((new \App\Services\LaporanTagihan())->rekapSpp($ta, $this->tgl('2025-10-15')))->firstWhere('santri.id', $s->id);
+        $this->assertSame([0, 0], [$baris['bulan_terlambat'], $baris['sisa_terlambat']]);
+        $this->assertSame(\App\Services\LaporanTagihan::LUNAS, $baris['bulan']['2025-08-01']);
+    }
 }

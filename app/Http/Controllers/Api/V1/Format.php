@@ -29,6 +29,7 @@ final class Format
             'email' => str_ends_with((string) $u->email, '@wali.khandaq') ? null : $u->email,
             'pekerjaan' => $u->pekerjaan, 'alamat' => $u->alamat,
             'wajib_ganti_password' => (bool) $u->wajib_ganti_password,
+            'google' => $u->firebase_uid ? ['terhubung' => true, 'email' => $u->email_google] : ['terhubung' => false, 'email' => null],
         ];
     }
 

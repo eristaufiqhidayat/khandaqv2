@@ -30,6 +30,10 @@ return [
     // Toleransi selisih tanggal antara laporan setoran wali dan mutasi BSI.
     'toleransi_hari_bank' => env('KHANDAQ_TOLERANSI_HARI_BANK', 2),
 
+    // Masuk dengan Google di aplikasi Android wali (Firebase Authentication). Isi dengan Project ID
+    // dari Firebase console > Project settings. Kosong = tombol Google ditolak server.
+    'firebase_project_id' => env('FIREBASE_PROJECT_ID'),
+
     // Database login aplikasi lama (Myth/Auth, lembaha1_igni399). Bila diisi, sinkronisasi membawa
     // password wali yang sudah ada sehingga wali tetap masuk dengan password lamanya. Kosongkan untuk melewati.
     'koneksi_login_lama' => env('KHANDAQ_KONEKSI_LOGIN_LAMA'),

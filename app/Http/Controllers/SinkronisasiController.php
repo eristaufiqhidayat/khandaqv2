@@ -45,7 +45,8 @@ class SinkronisasiController extends Controller
     {
         abort_unless(request()->user()->hasPermissionTo(Izin::MigrasiJalankan->value), 403);
 
-        return response()->json($run->only(['id', 'status', 'tahap', 'persen', 'ringkasan', 'rekonsiliasi', 'galat', 'mulai_pada', 'selesai_pada']));
+        return response()->json($run->only(['id', 'status', 'tahap', 'persen', 'ringkasan', 'rekonsiliasi', 'galat', 'mulai_pada', 'selesai_pada'])
+            + ['lama_detik' => $run->lamaDetik(), 'menunggu_pekerja' => $run->menungguPekerja()]);
     }
 
     /** Admin menghentikan catatan proses yang macet (mis. pekerja antrean belum dijalankan) agar bisa mengulang. */

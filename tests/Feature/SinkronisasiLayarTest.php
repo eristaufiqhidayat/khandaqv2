@@ -47,6 +47,27 @@ class SinkronisasiLayarTest extends KhandaqTestCase
         $this->assertStringContainsString('Terhenti tanpa kabar', $run->fresh()->galat);
     }
 
+    public function test_bilah_progres_tampil_dan_endpoint_memberi_tahap_persen_serta_lama_berjalan(): void
+    {
+        $this->actingAs($admin = $this->akunAdmin());
+        $run = MigrasiRun::create(['status' => 'berjalan', 'dijalankan_oleh' => $admin->id, 'mulai_pada' => CarbonImmutable::now()]);
+        $run->catatProgres('Buku tabungan (40.000 / 95.000)', 57);
+        $this->travel(90)->seconds();
+
+        $this->get(route('sinkronisasi.index'))->assertOk()
+            ->assertSee('role="progressbar"', false)->assertSee('aria-valuenow="57"', false)
+            ->assertSee('Buku tabungan (40.000 / 95.000)')->assertSee('57%');
+        $this->getJson(route('sinkronisasi.show', $run))->assertOk()
+            ->assertJson(['status' => 'berjalan', 'tahap' => 'Buku tabungan (40.000 / 95.000)', 'persen' => 57, 'lama_detik' => 90, 'menunggu_pekerja' => false]);
+    }
+
+    public function test_progres_tidak_pernah_mencapai_100_sebelum_selesai(): void
+    {
+        $run = MigrasiRun::create(['status' => 'berjalan', 'dijalankan_oleh' => $this->akunAdmin()->id]);
+        $run->catatProgres('Kalender akademik', 120);
+        $this->assertSame(99, $run->fresh()->persen);
+    }
+
     public function test_job_yang_gagal_menandai_proses_gagal(): void
     {
         $run = MigrasiRun::create(['status' => 'berjalan', 'dijalankan_oleh' => $this->akunAdmin()->id]);

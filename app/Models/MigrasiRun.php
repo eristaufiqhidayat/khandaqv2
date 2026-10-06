@@ -29,6 +29,49 @@ class MigrasiRun extends Model
         return $this->status === 'antri' && $this->created_at?->lt(CarbonImmutable::now()->subMinute());
     }
 
+    /**
+     * Catat tahap & persen saat sinkronisasi berjalan. Sinkronisasi berlangsung di dalam SATU transaksi besar;
+     * bila progres ditulis lewat koneksi yang sama, layar (koneksi lain) tidak melihatnya sampai transaksi selesai
+     * sehingga bilah progres diam di 0%. Karena itu progres ditulis lewat koneksi terpisah yang langsung tersimpan.
+     */
+    public function catatProgres(string $tahap, int $persen): void
+    {
+        $persen = max(0, min(99, $persen)); // 100% hanya saat benar-benar selesai
+        $data = ['tahap' => $tahap, 'persen' => $persen, 'updated_at' => CarbonImmutable::now()];
+
+        $koneksi = self::koneksiProgres();
+        if ($koneksi === null) { // mis. SQLite :memory: saat tes — koneksi kedua berarti basis data lain
+            $this->forceFill($data)->save();
+
+            return;
+        }
+        \Illuminate\Support\Facades\DB::connection($koneksi)->table($this->getTable())->where('id', $this->id)->update($data);
+        $this->forceFill($data)->syncOriginal();
+    }
+
+    /** Nama koneksi kedua (salinan pengaturan koneksi bawaan), atau null bila tidak bisa dipakai. */
+    private static function koneksiProgres(): ?string
+    {
+        $bawaan = config('database.default');
+        $cfg = config("database.connections.{$bawaan}");
+        if (! is_array($cfg) || (($cfg['driver'] ?? null) === 'sqlite' && in_array($cfg['database'] ?? '', [':memory:', ''], true))) {
+            return null;
+        }
+        config(['database.connections.khandaq_progres' => $cfg]);
+
+        return 'khandaq_progres';
+    }
+
+    /** Lama berjalan dalam detik (untuk tampilan). */
+    public function lamaDetik(): ?int
+    {
+        if (! $this->mulai_pada) {
+            return null;
+        }
+
+        return (int) $this->mulai_pada->diffInSeconds($this->selesai_pada ?? CarbonImmutable::now(), true);
+    }
+
     public function batalkan(string $alasan): void
     {
         if ($this->aktif()) {

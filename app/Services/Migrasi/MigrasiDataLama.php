@@ -83,6 +83,14 @@ class MigrasiDataLama
 
     private ?MigrasiRun $run = null;
 
+    private int $jumlahTahap = 1;
+
+    private int $urutTahap = 0;
+
+    private string $namaTahap = '';
+
+    private float $terakhirDicatat = 0;
+
     public function __construct(
         private string $koneksiLama = 'lama',
         private string $mode = 'paralel',
@@ -123,12 +131,16 @@ class MigrasiDataLama
         try {
             DB::transaction(function () use ($tahap) {
                 $this->muatReferensi();
-                $i = 0;
+                $this->jumlahTahap = count($tahap) + 1; // + rekonsiliasi
+                $this->urutTahap = 0;
                 foreach ($tahap as $nama => $metode) {
-                    $this->run->update(['tahap' => $nama, 'persen' => (int) round($i++ / (count($tahap) + 1) * 100)]);
+                    $this->namaTahap = $nama;
+                    $this->run->catatProgres($nama, $this->persenTahap(0));
                     $this->{$metode}();
+                    $this->urutTahap++;
                 }
             });
+            $this->run->catatProgres('Rekonsiliasi saldo', $this->persenTahap(0));
             $this->run->update([
                 'status' => 'selesai', 'tahap' => 'Rekonsiliasi saldo', 'persen' => 100,
                 'ringkasan' => $this->ringkasan, 'rekonsiliasi' => $this->rekonsiliasi(),
@@ -210,6 +222,22 @@ class MigrasiDataLama
             ->pluck('name')->all();
 
         return $this->lama->table($tabel)->select($this->kolomBaca[$tabel]);
+    }
+
+    /** Persen keseluruhan untuk tahap saat ini, dengan $fraksi (0..1) kemajuan di dalam tahap itu. */
+    private function persenTahap(float $fraksi): int
+    {
+        return (int) floor(($this->urutTahap + max(0, min(1, $fraksi))) / $this->jumlahTahap * 100);
+    }
+
+    /** Kemajuan di dalam tahap yang panjang (mis. ~95 ribu transaksi tabungan); dicatat paling sering tiap 2 detik. */
+    private function kemajuan(int $selesai, int $total): void
+    {
+        if (! $this->run || $total <= 0 || microtime(true) - $this->terakhirDicatat < 2) {
+            return;
+        }
+        $this->terakhirDicatat = microtime(true);
+        $this->run->catatProgres($this->namaTahap.' ('.number_format($selesai, 0, ',', '.').' / '.number_format($total, 0, ',', '.').')', $this->persenTahap($selesai / $total));
     }
 
     // ------------------------------------------------------------------ tahap
@@ -521,8 +549,10 @@ class MigrasiDataLama
         $total = 0;
         $tglSalah = 0;
         $tanpaKode = 0;
+        $semua = $this->lama->table('tbl_tabungan_transaksi')->count();
         $this->baca('tbl_tabungan_transaksi')->orderBy('notransaksi')
-            ->chunk(1000, function ($rows) use ($kodeArah, $buku, &$total, &$tglSalah, &$tanpaKode) {
+            ->chunk(1000, function ($rows) use ($kodeArah, $buku, &$total, &$tglSalah, &$tanpaKode, $semua) {
+                $this->kemajuan($total, $semua);
                 $tagihan = [];
                 $mutasi = [];
                 foreach ($rows as $r) {
@@ -710,7 +740,8 @@ class MigrasiDataLama
             ->orderByDesc('id_nilai') // terbaru dulu: bila ganda untuk santri/semester/jenis yang sama, yang terbaru dipakai
             ->get(['id_nilai', 'id_siswa', 'id_periode', 'keterangan', 'mime']);
         $sudah = [];
-        foreach ($meta as $r) {
+        foreach ($meta->values() as $ke => $r) {
+            $this->kemajuan($ke, $meta->count());
             $s = $this->santriMap[(int) $r->id_siswa] ?? null;
             $sem = $this->semByPeriode[(int) $r->id_periode] ?? null;
             $ket = strtoupper((string) $r->keterangan);
@@ -746,7 +777,9 @@ class MigrasiDataLama
     private function fotoSantri(): void
     {
         $ada = 0;
+        $ke = 0;
         foreach ($this->santriMap as $idLama => $santriId) {
+            $this->kemajuan($ke++, count($this->santriMap));
             $mentah = $this->lama->table('data_siswa')->where('id_siswa', $idLama)->value('image');
             if ($mentah === null || trim((string) $mentah) === '') {
                 continue;

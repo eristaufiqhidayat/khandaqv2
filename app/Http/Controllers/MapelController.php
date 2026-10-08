@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * Menu "Mapel & guru pengajar" (izin mapel.kelola, bawaan Admin):
- * daftar mata pelajaran (+KKM) dan penugasan guru ke kelas & mapel per tahun ajaran.
+ * daftar mata pelajaran (+KKM & bobot nilai akhir) dan penugasan guru ke kelas & mapel per tahun ajaran.
  * Akun guru dibuat di menu Pengguna dengan peran Guru.
  */
 class MapelController extends Controller
@@ -26,7 +26,7 @@ class MapelController extends Controller
         $ubah = $request->query('ubah') ? Mapel::find($request->query('ubah')) : null;
 
         return view('mapel.index', [
-            'daftarTa' => $daftarTa, 'ta' => $ta, 'ubah' => $ubah,
+            'daftarTa' => $daftarTa, 'ta' => $ta, 'ubah' => $ubah, 'bobotBawaan' => config('khandaq.nilai.bobot'),
             'mapel' => Mapel::urut()->get(),
             'kelas' => Kelas::where('aktif', true)->orderBy('tingkat')->orderBy('nama')->get(),
             'guru' => User::role('guru')->where('aktif', true)->orderBy('name')->get(),
@@ -100,7 +100,13 @@ class MapelController extends Controller
             'kode' => 'nullable|string|max:20',
             'kkm' => 'required|integer|between:0,100',
             'urutan' => 'nullable|integer|between:0,999',
-        ]);
+            'bobot_harian' => 'required|integer|between:0,100',
+            'bobot_uts' => 'required|integer|between:0,100',
+            'bobot_uas' => 'required|integer|between:0,100',
+        ], [], ['bobot_harian' => 'bobot harian', 'bobot_uts' => 'bobot UTS', 'bobot_uas' => 'bobot UAS']);
+        if ($d['bobot_harian'] + $d['bobot_uts'] + $d['bobot_uas'] !== 100) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['bobot_harian' => 'Jumlah bobot harian + UTS + UAS harus 100%.']);
+        }
 
         return array_merge($d, ['urutan' => (int) ($d['urutan'] ?? 0)]);
     }

@@ -22,7 +22,7 @@ class RekapController extends Controller
     {
         $k = KonteksGuru::dari($request, semua: true);
         $mode = $request->query('mode') === 'kelas' ? 'kelas' : 'mapel';
-        $data = ['k' => $k, 'mode' => $mode, 'bobot' => config('khandaq.nilai.bobot')];
+        $data = ['k' => $k, 'mode' => $mode];
 
         if ($k->pilih && $mode === 'mapel') {
             $data += $svc->rekap($k->pilih->kelas_id, $k->pilih->mapel, $k->semester);
@@ -71,7 +71,7 @@ class RekapController extends Controller
         $baris = $santri->map(function ($s) use ($nilai, $mapel) {
             $per = [];
             foreach ($mapel as $m) {
-                $per[$m->id] = $nilai->get($s->id)?->firstWhere('mapel_id', $m->id)?->nilaiAkhir();
+                $per[$m->id] = $nilai->get($s->id)?->firstWhere('mapel_id', $m->id)?->nilaiAkhir($m->bobot());
             }
             $isi = array_filter($per, fn ($v) => $v !== null);
 

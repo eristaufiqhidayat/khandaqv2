@@ -69,8 +69,11 @@ class ModulGuruTest extends KhandaqTestCase
     {
         $guru = $this->akun('guru1', 'guru');
         $this->actingAs($this->akun('admin', 'admin'));
-        $this->post(route('mapel.store'), ['nama' => 'IPA', 'kkm' => 70])->assertSessionHas('status');
+        $this->post(route('mapel.store'), ['nama' => 'IPA', 'kkm' => 70, 'bobot_harian' => 50, 'bobot_uts' => 30, 'bobot_uas' => 30])->assertSessionHasErrors('bobot_harian');
+        $this->post(route('mapel.store'), ['nama' => 'IPA', 'kkm' => 70, 'bobot_harian' => 40, 'bobot_uts' => 30, 'bobot_uas' => 30])->assertSessionHas('status');
         $ipa = Mapel::where('nama', 'IPA')->sole();
+        $this->assertSame(['harian' => 40, 'uts' => 30, 'uas' => 30], $ipa->bobot());
+        $this->get(route('mapel.index'))->assertSee('40/30/30');
         $kelas = Kelas::whereIn('nama', ['3 PUTRA', '4'])->pluck('id')->all();
 
         $this->post(route('mapel.tugaskan'), ['tahun_ajaran_id' => $this->ta->id, 'user_id' => $guru->id, 'mapel_id' => $ipa->id, 'kelas_id' => $kelas])->assertSessionHas('status');
@@ -120,6 +123,25 @@ class ModulGuruTest extends KhandaqTestCase
         // Nilai di luar 0..100 ditolak, tidak tersimpan.
         $this->post(route('guru.nilai.simpan'), $q + ['tab' => 'uts', 'nilai' => [$a->id => ['uts' => 120]]])->assertSessionHasErrors();
         $this->assertSame(80, $na->fresh()->uts);
+    }
+
+    public function test_bobot_nilai_akhir_per_mapel_bisa_diubah_admin(): void
+    {
+        [$guru, $mapel, $kelas] = $this->siapkan();
+        $s = $this->santri('3 PUTRA');
+        $q = ['ta' => $this->ta->id, 'semester' => $this->semester(), 'kelas' => $kelas->id, 'mapel' => $mapel->id];
+        Nilai::create(['santri_id' => $s->id, 'mapel_id' => $mapel->id, 'semester_id' => $this->semester(), 'kelas_id' => $kelas->id,
+            'harian_1' => 90, 'uts' => 80, 'uas' => 70]);
+        $this->actingAs($guru)->get(route('guru.rekap.index', $q))->assertSee('82,5')->assertSee('50% harian + 25% UTS + 25% UAS');
+
+        $this->actingAs($this->akun('admin', 'admin'));
+        $this->put(route('mapel.update', $mapel), ['nama' => 'Matematika', 'kode' => 'MTK', 'kkm' => 75,
+            'bobot_harian' => 30, 'bobot_uts' => 30, 'bobot_uas' => 40])->assertSessionHas('status');
+
+        // 30% x 90 + 30% x 80 + 40% x 70 = 79
+        $this->actingAs($guru)->get(route('guru.rekap.index', $q))->assertSee('30% harian + 30% UTS + 40% UAS')->assertSee('>79<', false);
+        $this->assertSame(79.0, Nilai::sole()->nilaiAkhir());
+        $this->put(route('mapel.update', $mapel), ['nama' => 'Matematika', 'kkm' => 75, 'bobot_harian' => 30, 'bobot_uts' => 30, 'bobot_uas' => 30])->assertForbidden();
     }
 
     public function test_guru_tidak_bisa_mengisi_kelas_yang_tidak_diajarnya_dan_admin_melihat_semua_rekap(): void

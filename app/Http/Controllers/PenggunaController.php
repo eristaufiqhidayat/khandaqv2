@@ -23,7 +23,7 @@ use Illuminate\Validation\Rule;
  */
 class PenggunaController extends Controller
 {
-    private const PERAN = ['admin' => 'Admin', 'admin_office' => 'Admin Office', 'keuangan' => 'Keuangan'];
+    private const PERAN = ['admin' => 'Admin', 'admin_office' => 'Admin Office', 'keuangan' => 'Keuangan', 'guru' => 'Guru'];
 
     public function __construct(private AkunService $akun, private KirimAksesWali $akses) {}
 

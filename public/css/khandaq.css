@@ -304,3 +304,46 @@ fieldset.field legend{font-weight:600;font-size:13px;margin-bottom:4px;padding:0
 .progres-ket b{color:var(--ink)}
 @keyframes progres-geser{to{background-position:28px 0}}
 @media (prefers-reduced-motion:reduce){.progres-isi{transition:none}.progres.tunggu .progres-isi{animation:none}}
+
+/* Modul guru */
+nav .nav-grup{display:block;color:rgba(255,255,255,.55);margin:12px 10px 2px}
+nav .nav-grup:first-child{margin-top:0}
+.stack>.seg{align-self:flex-start;flex-wrap:wrap}
+input[type=month]{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
+.tabel-nilai{min-width:760px}
+.tabel-nilai input.skor{width:76px;text-align:center;padding:6px}
+.tabel-nilai input.catatan-nilai{min-width:160px;padding:6px 8px}
+.tabel-nilai input.skor-rendah{background:var(--crit-soft);border-color:var(--crit)}
+.tabel-nilai input.skor-ok{background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 55%,var(--line))}
+.ringkas-nilai{margin-top:14px}
+.ringkas-nilai .kpi .v{font-size:20px;margin-top:2px}
+.catatan-grid,.soal-grid{grid-template-columns:minmax(0,1fr) 380px}
+.catatan-item,.soal-item{padding:12px 0;border-bottom:1px solid var(--line)}
+.catatan-item:last-child,.soal-item:last-child{border-bottom:0}
+.catatan-isi{margin-top:6px;color:var(--ink-2);white-space:pre-line}
+.soal-tanya{margin:8px 0 4px;white-space:pre-line}
+.soal-opsi{margin:0;padding-left:22px;color:var(--ink-2)}
+.soal-opsi li{padding:1px 0}
+.soal-opsi li.benar{color:var(--good);font-weight:700}
+.soal-opsi li.benar::after{content:" ✓"}
+.opsi-baris{display:grid;grid-template-columns:auto 18px 1fr;gap:8px;align-items:center}
+.opsi-baris input[type=radio]{width:16px;height:16px;accent-color:var(--good)}
+.cetak-soal{max-width:800px;margin:0 auto;padding:24px 20px 48px;background:var(--surface);color:var(--ink);min-height:100vh}
+.cetak-kop{display:flex;gap:14px;align-items:center;border-bottom:3px double var(--ink);padding-bottom:10px;margin-bottom:12px;font-size:15px}
+.cetak-identitas{width:auto}
+.cetak-identitas td{border:0;padding:2px 14px 2px 0}
+.cetak-identitas td:nth-child(3){padding-left:40px}
+.cetak-daftar{padding-left:22px}
+.cetak-daftar>li{margin-bottom:12px;break-inside:avoid}
+.cetak-daftar>li>p{white-space:pre-line;margin-bottom:4px}
+.cetak-daftar ol{padding-left:20px;margin:0}
+.cetak-kunci{break-before:page;margin-top:28px}
+.kunci-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px 12px;padding-left:28px;margin-top:8px}
+@media (max-width:1100px){.catatan-grid,.soal-grid{grid-template-columns:1fr}}
+@media print{
+  .no-cetak,.side,.alert{display:none!important}
+  .app{display:block} main{padding:0}
+  body,.cetak-soal{background:#fff;color:#000}
+  .card{box-shadow:none;border-color:#bbb;break-inside:avoid}
+  .tw{overflow:visible;margin:0;padding:0}
+}

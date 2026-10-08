@@ -25,7 +25,8 @@ class RolePermissionSeeder extends Seeder
         $peran = [
             'admin' => [Izin::TarifKelola, Izin::BeasiswaAjukan, Izin::PengecualianKelola, Izin::TagihanKelola,
                 Izin::RaportUnggah, Izin::RaportLihatSemua, Izin::LaporanLihat,
-                Izin::KelasKelola, Izin::PeriodeKelola, Izin::PenggunaKelola, Izin::HakAksesKelola, Izin::MigrasiJalankan],
+                Izin::KelasKelola, Izin::PeriodeKelola, Izin::PenggunaKelola, Izin::HakAksesKelola, Izin::MigrasiJalankan,
+                Izin::MapelKelola, Izin::NilaiLihatSemua],
             'admin_office' => [Izin::SetoranCatat, Izin::SetoranVerifikasi, Izin::PenarikanCatat, Izin::TagihanKelola,
                 Izin::KeringananAjukan, Izin::RaportUnggah, Izin::RaportLihatSemua, Izin::SantriKelola,
                 Izin::PendaftaranProses, Izin::DataWaliVerifikasi, Izin::AkunWaliReset, Izin::WaSiaran],
@@ -33,6 +34,8 @@ class RolePermissionSeeder extends Seeder
             'keuangan' => [Izin::KeringananSetujui, Izin::BankImpor, Izin::SetoranVerifikasi, Izin::PengeluaranCatat,
                 Izin::TutupBuku, Izin::TunggakanPutuskan, Izin::LaporanLihat, Izin::RaportLihatSemua,
                 Izin::MasterKeuanganKelola, Izin::GajiKelola],
+            // Guru: hanya kelas & mapel yang ditugaskan kepadanya (menu Mapel & guru pengajar).
+            'guru' => [Izin::GuruMengajar],
             'wali_santri' => [],
         ];
         foreach ($peran as $nama => $izin) {

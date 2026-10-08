@@ -36,6 +36,11 @@ enum Izin: string
     case MasterKeuanganKelola = 'master_keuangan.kelola'; // rekening, akun biaya, pengusul (Keuangan)
     case GajiKelola = 'gaji.kelola';                 // data pegawai & file payroll gaji BSI (Keuangan)
 
+    // Modul guru
+    case GuruMengajar = 'guru.mengajar';             // dashboard, catatan harian, soal PG, input & rekap nilai kelas yang diajar (Guru)
+    case MapelKelola = 'mapel.kelola';               // mata pelajaran & guru pengajar per kelas (Admin)
+    case NilaiLihatSemua = 'nilai.lihat_semua';      // rekap nilai semua kelas & mapel (Admin)
+
     /** Label untuk layar Hak akses. */
     public function label(): string
     {
@@ -68,6 +73,9 @@ enum Izin: string
             self::AkunWaliReset => 'Reset sandi & nonaktifkan akun wali',
             self::MasterKeuanganKelola => 'Rekening & akun biaya',
             self::GajiKelola => 'Gaji pegawai (payroll BSI)',
+            self::GuruMengajar => 'Modul guru: catatan harian, soal, nilai kelas yang diajar',
+            self::MapelKelola => 'Mata pelajaran & guru pengajar',
+            self::NilaiLihatSemua => 'Rekap nilai semua kelas',
         };
     }
 }

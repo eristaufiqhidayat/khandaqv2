@@ -31,6 +31,17 @@ Password dari aplikasi lama tetap diterima (sekali, lalu diubah ke format baru).
 Galat: 422 `salah`, 429 `terlalu_banyak` (5 percobaan salah / menit), 403 `bukan_wali`, 403 `akun_nonaktif`.
 Bila `wali.wajib_ganti_password` true, aplikasi sebaiknya langsung membuka layar ganti password.
 
+### `POST /masuk/google`
+Masuk dengan Google (Firebase Authentication). Body: `{"id_token": "<FirebaseAuth.currentUser.getIdToken()>", "perangkat": "..."}`.
+Server memeriksa tanda tangan token Google, `aud` = `FIREBASE_PROJECT_ID`, penyedia `google.com`, email terverifikasi.
+Wali dicari lewat akun Google yang pernah ditautkan, lalu lewat email wali yang sama. Respons sama dengan `/masuk`
+(`wajib_ganti_password` selalu `false`). Galat: `google_belum_terhubung` (404), `email_ganda` (409),
+`token_google_salah` (422), `akun_nonaktif`/`bukan_wali` (403), `google_nonaktif` (503, server belum diatur).
+
+### `POST /saya/google` · `DELETE /saya/google`
+Wali yang sudah masuk menautkan / melepas akun Google (body `{"id_token": "..."}`). Email Google boleh berbeda
+dengan email di Khandaq. `wali.google` = `{"terhubung": bool, "email": "..."}`.
+
 ### `POST /keluar`
 Mencabut token perangkat ini.
 

@@ -11,12 +11,15 @@ use Illuminate\Support\Facades\Route;
 */
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('/masuk', [AkunController::class, 'masuk'])->name('masuk');
+    Route::post('/masuk/google', [AkunController::class, 'masukGoogle'])->name('masuk.google');
 
     Route::middleware([TokenWali::class, 'throttle:120,1'])->group(function () {
         Route::post('/keluar', [AkunController::class, 'keluar'])->name('keluar');
         Route::get('/saya', [AkunController::class, 'saya'])->name('saya');
         Route::put('/saya', [AkunController::class, 'ubah'])->name('saya.ubah');
         Route::post('/saya/password', [AkunController::class, 'gantiPassword'])->name('saya.password');
+        Route::post('/saya/google', [AkunController::class, 'tautkanGoogle'])->name('saya.google');
+        Route::delete('/saya/google', [AkunController::class, 'lepasGoogle'])->name('saya.google.lepas');
         Route::get('/kalender', [AnakController::class, 'kalender'])->name('kalender');
 
         Route::prefix('anak/{santri}')->name('anak.')->group(function () {

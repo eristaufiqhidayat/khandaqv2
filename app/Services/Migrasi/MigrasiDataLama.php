@@ -242,6 +242,9 @@ class MigrasiDataLama
 
     // ------------------------------------------------------------------ tahap
 
+    /** @var array<int, object> legacy_id_orangtua -> tautan Google sebelum sinkron */
+    private array $googleLama = [];
+
     private function kosongkan(): void
     {
         // Anak dulu, induk belakangan. Akun staf, peran/izin, dana, rekening, jenis tagihan tidak disentuh.
@@ -256,6 +259,9 @@ class MigrasiDataLama
             DB::table($t)->delete();
         }
         DB::table('santri')->delete();
+        // Akun Google yang sudah ditautkan wali (Masuk dengan Google) dibawa ke akun hasil sinkron berikutnya.
+        $this->googleLama = DB::table('users')->whereNotNull('legacy_id_orangtua')->whereNotNull('firebase_uid')
+            ->get(['legacy_id_orangtua', 'firebase_uid', 'email_google'])->keyBy('legacy_id_orangtua')->all();
         $wali = DB::table('users')->whereNotNull('legacy_id_orangtua')->pluck('id');
         if ($wali->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('model_has_roles')) {
             DB::table('model_has_roles')->whereIn('model_id', $wali)->where('model_type', User::class)->delete();
@@ -390,6 +396,8 @@ class MigrasiDataLama
                 'password_lama' => $hashLama = $loginLama[mb_strtolower(trim((string) $o->username))] ?? null,
                 'wajib_ganti_password' => $hashLama === null,
                 'legacy_id_orangtua' => $o->id_orangtua, 'created_at' => $this->now, 'updated_at' => $this->now,
+                'firebase_uid' => $this->googleLama[$o->id_orangtua]->firebase_uid ?? null,
+                'email_google' => $this->googleLama[$o->id_orangtua]->email_google ?? null,
             ]);
             $username[$un] = $email[$em] = $id;
             $userLama[$o->id_orangtua] = [$id, match ($o->status_keluarga) { 'bapak' => 'ayah', 'ibu' => 'ibu', default => 'wali' }];

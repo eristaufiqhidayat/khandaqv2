@@ -44,10 +44,10 @@ class RekapController extends Controller
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // agar Excel membaca UTF-8
             fputcsv($out, ['Kelas', $k->pilih->kelas->nama, 'Mapel', $k->pilih->mapel->nama, 'Semester', $k->semester->label, 'KKM', $k->pilih->mapel->kkm], ';');
-            fputcsv($out, ['No', 'NIS', 'Nama', 'Harian 1', 'Harian 2', 'Harian 3', 'Tugas', 'Rata harian', 'UTS', 'UAS', 'Nilai akhir', 'Predikat', 'Tuntas', 'Peringkat'], ';');
+            fputcsv($out, ['No', 'NIS', 'Nama', ...array_values(Nilai::LABEL_HARIAN), 'Rata harian', 'UTS', 'UAS', 'Nilai akhir', 'Predikat', 'Tuntas', 'Peringkat'], ';');
             foreach ($r['baris'] as $i => $b) {
                 $n = $b['nilai'];
-                fputcsv($out, [$i + 1, $b['santri']->nis, $b['santri']->nama, $n->harian_1, $n->harian_2, $n->harian_3, $n->tugas,
+                fputcsv($out, [$i + 1, $b['santri']->nis, $b['santri']->nama, ...array_map(fn ($k) => $n->{$k}, Nilai::HARIAN),
                     self::koma($b['harian']), $b['uts'], $b['uas'], self::koma($b['akhir']), $b['predikat'],
                     $b['tuntas'] === null ? '' : ($b['tuntas'] ? 'Ya' : 'Belum'), $b['peringkat']], ';');
             }

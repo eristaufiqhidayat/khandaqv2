@@ -28,7 +28,7 @@
   <div class="card">
     <div class="card-h"><h2>Kelas {{ $k->pilih->kelas->nama }} · {{ $mapel->nama }}</h2><span class="muted">{{ $k->semester->label }}@if ($k->pilih->guru) · {{ $k->pilih->guru->name }}@endif</span></div>
     <div class="tw"><table>
-      <thead><tr><th>No</th><th>NIS</th><th>Nama siswa</th><th class="r">H1</th><th class="r">H2</th><th class="r">H3</th><th class="r">Tugas</th><th class="r">Rata harian</th><th class="r">UTS</th><th class="r">UAS</th><th class="r">Nilai akhir</th><th>Predikat</th><th>Status</th><th class="r">Peringkat</th></tr></thead>
+      <thead><tr><th>No</th><th>NIS</th><th>Nama siswa</th>@foreach (\App\Models\Nilai::LABEL_HARIAN as $lbl)<th class="r">{{ $lbl }}</th>@endforeach<th class="r">Rata harian</th><th class="r">UTS</th><th class="r">UAS</th><th class="r">Nilai akhir</th><th>Predikat</th><th>Status</th><th class="r">Peringkat</th></tr></thead>
       <tbody>
       @forelse ($baris as $i => $b)
         <tr><td class="num">{{ $i + 1 }}</td><td class="num">{{ $b['santri']->nis }}</td><td>{{ $b['santri']->nama }}</td>
@@ -39,7 +39,7 @@
           <td>@if ($b['tuntas'] === true)<span class="chip c-good">Tuntas</span>@elseif ($b['tuntas'] === false)<span class="chip c-crit">Belum tuntas</span>@else<span class="hint">Belum dinilai</span>@endif</td>
           <td class="r num">{{ $b['peringkat'] ?? '–' }}</td></tr>
       @empty
-        <tr><td colspan="14" class="muted">Belum ada santri aktif di kelas ini.</td></tr>
+        <tr><td colspan="{{ 10 + count(\App\Models\Nilai::HARIAN) }}" class="muted">Belum ada santri aktif di kelas ini.</td></tr>
       @endforelse
       </tbody>
     </table></div>

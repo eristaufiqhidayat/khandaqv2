@@ -110,10 +110,10 @@ class ModulGuruTest extends KhandaqTestCase
         $q = ['ta' => $this->ta->id, 'semester' => $this->semester(), 'kelas' => $kelas->id, 'mapel' => $mapel->id];
         $this->actingAs($guru);
 
-        $this->get(route('guru.nilai.index', $q))->assertOk()->assertSee($a->nama)->assertSee($b->nama)->assertDontSee($lain->nama)->assertSee('Harian 1');
+        $this->get(route('guru.nilai.index', $q))->assertOk()->assertSee($a->nama)->assertSee($b->nama)->assertDontSee($lain->nama)->assertSee('H5');
 
         $this->post(route('guru.nilai.simpan'), $q + ['tab' => 'harian', 'nilai' => [
-            $a->id => ['harian_1' => 80, 'harian_2' => 90, 'harian_3' => '', 'tugas' => 100, 'catatan' => 'rajin'],
+            $a->id => ['harian_1' => 80, 'harian_2' => 90, 'harian_3' => '', 'harian_5' => 70, 'tugas' => 100, 'catatan' => 'rajin'],
             $b->id => ['harian_1' => 60, 'harian_2' => 70],
             $lain->id => ['harian_1' => 100], // bukan santri kelas ini: diabaikan
         ]])->assertSessionHas('status');
@@ -121,18 +121,18 @@ class ModulGuruTest extends KhandaqTestCase
         $this->post(route('guru.nilai.simpan'), $q + ['tab' => 'uas', 'nilai' => [$a->id => ['uas' => 70]]]);
 
         $na = Nilai::where('santri_id', $a->id)->sole();
-        $this->assertSame([80, 90, null, 100, 80, 70, 'rajin'], [$na->harian_1, $na->harian_2, $na->harian_3, $na->tugas, $na->uts, $na->uas, $na->catatan_harian]);
-        $this->assertSame(90.0, $na->rataHarian());
-        $this->assertSame(82.5, $na->nilaiAkhir(), '50% x 90 + 25% x 80 + 25% x 70');
+        $this->assertSame([80, 90, null, null, 70, 100, 80, 70, 'rajin'], [$na->harian_1, $na->harian_2, $na->harian_3, $na->harian_4, $na->harian_5, $na->tugas, $na->uts, $na->uas, $na->catatan_harian]);
+        $this->assertSame(85.0, $na->rataHarian(), 'rata-rata H1, H2, H5, Tugas yang terisi');
+        $this->assertSame(80.0, $na->nilaiAkhir(), '50% x 85 + 25% x 80 + 25% x 70');
         $this->assertSame(63.3, Nilai::where('santri_id', $b->id)->sole()->nilaiAkhir(), 'UAS kosong: bobot harian 50 & UTS 25 dibagi ulang');
         $this->assertFalse(Nilai::where('santri_id', $lain->id)->exists());
         $this->assertSame('nilai', \Spatie\Activitylog\Models\Activity::where('subject_type', Nilai::class)->value('log_name'));
 
-        $this->get(route('guru.rekap.index', $q))->assertOk()->assertSee('82,5')->assertSee('Belum tuntas')->assertSee('Tuntas');
+        $this->get(route('guru.rekap.index', $q))->assertOk()->assertSee('H5')->assertSee('63,3')->assertSee('Belum tuntas')->assertSee('Tuntas');
         $this->get(route('guru.rekap.index', $q + ['mode' => 'kelas']))->assertOk()->assertSee('MTK');
         $csv = $this->get(route('guru.rekap.unduh', $q))->assertOk()->streamedContent();
-        $this->assertStringContainsString('"'.$a->nama.'";80;90;;100;90;80;70;82,5;B;Ya;1', $csv);
-        $this->assertStringContainsString('"'.$b->nama.'";60;70;;;65;60;;63,3;D;Belum;2', $csv);
+        $this->assertStringContainsString('"'.$a->nama.'";80;90;;;70;100;85;80;70;80;B;Ya;1', $csv);
+        $this->assertStringContainsString('"'.$b->nama.'";60;70;;;;;65;60;;63,3;D;Belum;2', $csv);
         $this->get(route('guru.dashboard', $q))->assertOk()->assertSee('Harian 2/2')->assertSee('UAS 1/2');
 
         // Nilai di luar 0..100 ditolak, tidak tersimpan.

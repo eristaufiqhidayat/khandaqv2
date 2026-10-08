@@ -29,7 +29,7 @@
     @else
     <div class="tw"><table class="tabel-nilai" data-kkm="{{ $mapel->kkm }}" data-mode="{{ $tab }}">
       <thead><tr><th>No</th><th>NIS</th><th>Nama siswa</th>
-        @if ($tab === 'harian')<th>Harian 1</th><th>Harian 2</th><th>Harian 3</th><th>Tugas</th><th>Rata-rata</th>@else<th>Nilai {{ strtoupper($tab) }}</th>@endif
+        @if ($tab === 'harian')@foreach (\App\Models\Nilai::LABEL_HARIAN as $lbl)<th>{{ $lbl }}</th>@endforeach<th>Rata-rata</th>@else<th>Nilai {{ strtoupper($tab) }}</th>@endif
         <th>Catatan</th></tr></thead>
       <tbody>
       @foreach ($santri as $i => $s)
@@ -38,7 +38,7 @@
           <td><b>{{ $s->nama }}</b><br><span class="hint">{{ ucfirst($s->status->value) }}</span></td>
           @foreach ($cfg['kolom'] as $kol)
             <td><input class="skor num" type="number" inputmode="numeric" min="0" max="100" step="1" name="nilai[{{ $s->id }}][{{ $kol }}]"
-              value="{{ old("nilai.{$s->id}.{$kol}", $n?->{$kol}) }}" aria-label="{{ $kol === 'tugas' ? 'Tugas' : ucfirst(str_replace('_', ' ', $kol)) }} {{ $s->nama }}"></td>
+              value="{{ old("nilai.{$s->id}.{$kol}", $n?->{$kol}) }}" aria-label="{{ \App\Models\Nilai::LABEL_HARIAN[$kol] ?? strtoupper($kol) }} {{ $s->nama }}"></td>
           @endforeach
           @if ($tab === 'harian')<td><b class="num rata-baris">–</b></td>@endif
           <td><input type="text" class="catatan-nilai" name="nilai[{{ $s->id }}][catatan]" maxlength="255" placeholder="opsional" value="{{ old("nilai.{$s->id}.catatan", $n?->{$cfg['catatan']}) }}" aria-label="Catatan {{ $s->nama }}"></td>

@@ -65,6 +65,21 @@ class ModulGuruTest extends KhandaqTestCase
         $this->get(route('mapel.index'))->assertForbidden();
     }
 
+    /** Struktur & standar (mapel, KKM, bobot, penugasan, hak akses) hanya Admin; guru hanya mengisi nilai. */
+    public function test_guru_tidak_bisa_mengubah_struktur_dan_standar(): void
+    {
+        [$guru, $mapel, $kelas] = $this->siapkan();
+        $this->actingAs($guru);
+        $this->post(route('mapel.store'), ['nama' => 'X', 'kkm' => 50, 'bobot_harian' => 100, 'bobot_uts' => 0, 'bobot_uas' => 0])->assertForbidden();
+        $this->put(route('mapel.update', $mapel), ['nama' => 'Matematika', 'kkm' => 50, 'bobot_harian' => 100, 'bobot_uts' => 0, 'bobot_uas' => 0])->assertForbidden();
+        $this->post(route('mapel.toggle', $mapel))->assertForbidden();
+        $this->post(route('mapel.tugaskan'), ['tahun_ajaran_id' => $this->ta->id, 'user_id' => $guru->id, 'mapel_id' => $mapel->id, 'kelas_id' => [$kelas->id]])->assertForbidden();
+        $this->delete(route('mapel.lepas', GuruMengajar::sole()))->assertForbidden();
+        $this->post(route('mapel.salin', $this->ta))->assertForbidden();
+        $this->post(route('hakakses.update'), ['peran' => 'guru', 'izin' => 'mapel.kelola', 'beri' => 1])->assertForbidden();
+        $this->assertSame([75, 50, 1], [$mapel->fresh()->kkm, $mapel->fresh()->bobot_harian, GuruMengajar::count()]);
+    }
+
     public function test_admin_membuat_mapel_dan_menugaskan_guru_ke_beberapa_kelas(): void
     {
         $guru = $this->akun('guru1', 'guru');

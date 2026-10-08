@@ -87,7 +87,7 @@ class NilaiService
 
         $baris = $santri->map(function ($s) use ($nilai, $mapel) {
             $n = $nilai->get($s->id) ?? new Nilai;
-            $akhir = $n->nilaiAkhir();
+            $akhir = $n->nilaiAkhir($mapel->bobot());
 
             return [
                 'santri' => $s, 'nilai' => $n, 'harian' => $n->rataHarian(), 'uts' => $n->uts, 'uas' => $n->uas,

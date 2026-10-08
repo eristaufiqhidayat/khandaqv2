@@ -41,14 +41,14 @@
 
   <div class="stack">
     <div class="card"><div class="card-h"><h2>Mata pelajaran</h2></div><div class="tw"><table>
-      <thead><tr><th>Mapel</th><th>Kode</th><th class="r">KKM</th><th>Status</th><th></th></tr></thead><tbody>
+      <thead><tr><th>Mapel</th><th class="r">KKM</th><th title="Bobot nilai akhir: harian / UTS / UAS">Bobot H/UTS/UAS</th><th></th></tr></thead><tbody>
       @forelse ($mapel as $m)
-        <tr><td>{{ $m->nama }}</td><td class="num">{{ $m->kode ?? '–' }}</td><td class="r num">{{ $m->kkm }}</td>
-          <td>@if ($m->aktif)<span class="chip c-good">Aktif</span>@else<span class="chip">Nonaktif</span>@endif</td>
+        <tr><td>{{ $m->nama }}@if ($m->kode) <span class="hint num">{{ $m->kode }}</span>@endif @unless ($m->aktif)<span class="chip">Nonaktif</span>@endunless</td><td class="r num">{{ $m->kkm }}</td>
+          <td class="num">{{ $m->bobot_harian }}/{{ $m->bobot_uts }}/{{ $m->bobot_uas }}</td>
           <td class="r"><div class="row" style="gap:6px;justify-content:flex-end"><a class="btn sm" href="{{ route('mapel.index', ['ta' => $ta->id, 'ubah' => $m->id]) }}">Ubah</a>
             <form method="post" action="{{ route('mapel.toggle', $m) }}">@csrf<button class="btn sm">{{ $m->aktif ? 'Nonaktifkan' : 'Aktifkan' }}</button></form></div></td></tr>
       @empty
-        <tr><td colspan="5" class="muted">Belum ada mata pelajaran.</td></tr>
+        <tr><td colspan="4" class="muted">Belum ada mata pelajaran.</td></tr>
       @endforelse
     </tbody></table></div></div>
 
@@ -61,8 +61,28 @@
         <div class="field"><label for="mkkm">KKM</label><input id="mkkm" name="kkm" type="number" min="0" max="100" required value="{{ old('kkm', $ubah?->kkm ?? 75) }}"></div>
         <div class="field"><label for="mu">Urutan</label><input id="mu" name="urutan" type="number" min="0" max="999" value="{{ old('urutan', $ubah?->urutan ?? 0) }}"></div>
       </div>
+      <fieldset class="field" id="bobotNilai"><legend>Bobot nilai akhir <span class="hint">(jumlah harus 100%)</span></legend>
+        <div class="grid g3">
+          @foreach (['harian' => 'Rata-rata harian', 'uts' => 'UTS', 'uas' => 'UAS'] as $kb => $lb)
+            <div class="field"><label for="mb-{{ $kb }}">{{ $lb }} (%)</label><input id="mb-{{ $kb }}" name="bobot_{{ $kb }}" type="number" min="0" max="100" required value="{{ old('bobot_'.$kb, $ubah?->{'bobot_'.$kb} ?? $bobotBawaan[$kb]) }}"></div>
+          @endforeach
+        </div>
+        <span class="hint" id="bobotTotal" aria-live="polite"></span>
+      </fieldset>
       <div class="row"><button class="btn p">{{ $ubah ? 'Simpan' : 'Tambah mapel' }}</button>@if ($ubah)<a class="btn" href="{{ route('mapel.index', ['ta' => $ta->id]) }}">Batal</a>@endif</div>
     </form>
   </div>
 </div>
+<script>
+(() => {
+  const box = document.getElementById('bobotNilai'), out = document.getElementById('bobotTotal');
+  if (!box) return;
+  const hitung = () => {
+    const t = [...box.querySelectorAll('input')].reduce((a, i) => a + (Number(i.value) || 0), 0);
+    out.textContent = 'Jumlah: ' + t + '%' + (t === 100 ? '' : ' — harus 100%');
+    out.style.color = t === 100 ? 'var(--good)' : 'var(--crit)';
+  };
+  box.addEventListener('input', hitung); hitung();
+})();
+</script>
 @endsection

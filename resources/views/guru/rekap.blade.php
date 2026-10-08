@@ -2,7 +2,7 @@
 @section('judul', 'Rekap nilai')
 @php($fmt = fn ($v) => $v === null ? '–' : str_replace('.', ',', (string) $v))
 @section('halaman')
-<div class="top"><div><h1>Rekap nilai</h1><p class="muted">Nilai akhir = {{ $bobot['harian'] }}% rata-rata harian + {{ $bobot['uts'] }}% UTS + {{ $bobot['uas'] }}% UAS. Bila sebagian belum diisi, dihitung dari komponen yang ada.</p></div>
+<div class="top"><div><h1>Rekap nilai</h1><p class="muted">Nilai akhir = {{ $k->pilih && $mode === 'mapel' ? $k->pilih->mapel->rumus() : 'bobot harian, UTS, dan UAS tiap mapel' }} (diatur Admin per mapel). Bila sebagian belum diisi, dihitung dari komponen yang ada.</p></div>
   @if ($k->pilih)<div class="row no-cetak">
     @if ($mode === 'mapel')<a class="btn" href="{{ route('guru.rekap.unduh', $k->query()) }}">Unduh CSV</a>@endif
     <button class="btn" type="button" onclick="window.print()">Cetak</button></div>@endif</div>

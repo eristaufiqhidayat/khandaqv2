@@ -27,7 +27,8 @@ return [
         'email_maildir' => env('BSI_EMAIL_MAILDIR'),
     ],
 
-    // Modul guru: bobot nilai akhir (persen). Bila sebagian komponen belum diisi, bobot dibagi ulang di antara yang terisi.
+    // Modul guru: bobot nilai akhir (persen) BAWAAN untuk mapel baru. Bobot tiap mapel diubah Admin di menu
+    // Mapel & guru pengajar. Bila sebagian komponen belum diisi, bobot dibagi ulang di antara yang terisi.
     'nilai' => [
         'bobot' => [
             'harian' => (int) env('KHANDAQ_BOBOT_HARIAN', 50),

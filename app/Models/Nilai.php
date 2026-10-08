@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Nilai satu santri untuk satu mapel di satu semester.
  * Rata-rata harian = rata-rata kolom harian & tugas yang terisi.
- * Nilai akhir = bobot harian/UTS/UAS (config khandaq.nilai.bobot) atas komponen yang terisi.
+ * Nilai akhir = bobot harian/UTS/UAS milik mapel (Mapel::bobot) atas komponen yang terisi.
  */
 class Nilai extends Model
 {
@@ -49,9 +49,9 @@ class Nilai extends Model
     }
 
     /** Null bila belum ada komponen yang terisi. Bobot dibagi ulang di antara komponen yang terisi. */
-    public function nilaiAkhir(): ?float
+    public function nilaiAkhir(?array $bobot = null): ?float
     {
-        $bobot = config('khandaq.nilai.bobot');
+        $bobot ??= $this->mapel?->bobot() ?? config('khandaq.nilai.bobot');
         $komponen = array_filter([
             'harian' => $this->rataHarian(), 'uts' => $this->uts, 'uas' => $this->uas,
         ], fn ($v) => $v !== null);

@@ -25,9 +25,16 @@ return [
     ['label' => 'Potongan otomatis', 'route' => 'potongan.index', 'izin' => Izin::PengecualianKelola],
     ['label' => 'Tahun ajaran & kelas', 'route' => 'periode.index', 'izin' => Izin::PeriodeKelola],
     ['label' => 'Kalender akademik', 'route' => 'kalender.index', 'izin' => Izin::PeriodeKelola],
+    ['label' => 'Mapel & guru pengajar', 'route' => 'mapel.index', 'izin' => Izin::MapelKelola],
     ['label' => 'Rekening & akun biaya', 'route' => 'masterkeu.index', 'izin' => Izin::MasterKeuanganKelola],
     ['label' => 'Pengguna', 'route' => 'pengguna.index', 'izin' => [Izin::PenggunaKelola, Izin::AkunWaliReset]], // Admin Office: tab Wali saja
     ['label' => 'Siaran WhatsApp', 'route' => 'siaran.index', 'izin' => Izin::WaSiaran],
     ['label' => 'Sinkronisasi data lama', 'route' => 'sinkronisasi.index', 'izin' => Izin::MigrasiJalankan],
     ['label' => 'Hak akses', 'route' => 'hakakses.index', 'izin' => Izin::HakAksesKelola],
+    // Modul guru, paling akhir (`grup` tampil sebagai judul kecil di sidebar; menu bergrup diletakkan setelah menu tanpa grup).
+    ['label' => 'Dashboard guru', 'route' => 'guru.dashboard', 'izin' => Izin::GuruMengajar, 'grup' => 'Menu guru'],
+    ['label' => 'Catatan harian guru', 'route' => 'guru.catatan.index', 'izin' => Izin::GuruMengajar, 'grup' => 'Menu guru'],
+    ['label' => 'Soal pilihan ganda', 'route' => 'guru.soal.index', 'izin' => Izin::GuruMengajar, 'grup' => 'Menu guru'],
+    ['label' => 'Input nilai siswa', 'route' => 'guru.nilai.index', 'izin' => Izin::GuruMengajar, 'grup' => 'Menu guru'],
+    ['label' => 'Rekap nilai', 'route' => 'guru.rekap.index', 'izin' => [Izin::GuruMengajar, Izin::NilaiLihatSemua], 'grup' => 'Menu guru'],
 ];

@@ -30,6 +30,8 @@ use App\Http\Controllers\StatusPembayaranController;
 use App\Http\Controllers\TunggakanController;
 use App\Http\Controllers\TutupBukuController;
 use App\Http\Controllers\GajiController;
+use App\Http\Controllers\Guru;
+use App\Http\Controllers\MapelController;
 use App\Http\Controllers\VerifikasiController;
 use App\Http\Controllers\Wali\PortalController;
 use App\Http\Controllers\WebhookWaController;
@@ -245,6 +247,36 @@ Route::middleware('auth')->group(function () {
         Route::get('/{siaran}', [SiaranWaController::class, 'show'])->name('show');
         Route::post('/{siaran}/kirim', [SiaranWaController::class, 'kirim'])->name('kirim');
         Route::post('/{siaran}/batal', [SiaranWaController::class, 'batal'])->name('batal');
+    });
+
+    // Modul guru: hanya kelas & mapel yang ditugaskan (App\Support\KonteksGuru). Rekap juga untuk nilai.lihat_semua.
+    Route::middleware($izin(Izin::GuruMengajar))->prefix('guru')->name('guru.')->group(function () {
+        Route::get('/', Guru\DashboardController::class)->name('dashboard');
+        Route::get('/catatan-harian', [Guru\CatatanHarianController::class, 'index'])->name('catatan.index');
+        Route::post('/catatan-harian', [Guru\CatatanHarianController::class, 'store'])->name('catatan.store');
+        Route::put('/catatan-harian/{catatan}', [Guru\CatatanHarianController::class, 'update'])->name('catatan.update');
+        Route::delete('/catatan-harian/{catatan}', [Guru\CatatanHarianController::class, 'destroy'])->name('catatan.destroy');
+        Route::get('/soal', [Guru\SoalController::class, 'index'])->name('soal.index');
+        Route::get('/soal/cetak', [Guru\SoalController::class, 'cetak'])->name('soal.cetak');
+        Route::post('/soal', [Guru\SoalController::class, 'store'])->name('soal.store');
+        Route::put('/soal/{soal}', [Guru\SoalController::class, 'update'])->name('soal.update');
+        Route::delete('/soal/{soal}', [Guru\SoalController::class, 'destroy'])->name('soal.destroy');
+        Route::get('/nilai', [Guru\NilaiController::class, 'index'])->name('nilai.index');
+        Route::post('/nilai', [Guru\NilaiController::class, 'simpan'])->name('nilai.simpan');
+    });
+    Route::middleware('permission:'.Izin::GuruMengajar->value.'|'.Izin::NilaiLihatSemua->value)->prefix('guru/rekap-nilai')->name('guru.rekap.')->group(function () {
+        Route::get('/', [Guru\RekapController::class, 'index'])->name('index');
+        Route::get('/unduh', [Guru\RekapController::class, 'unduh'])->name('unduh');
+    });
+
+    Route::middleware($izin(Izin::MapelKelola))->prefix('mapel')->name('mapel.')->group(function () {
+        Route::get('/', [MapelController::class, 'index'])->name('index');
+        Route::post('/', [MapelController::class, 'store'])->name('store');
+        Route::put('/{mapel}', [MapelController::class, 'update'])->name('update');
+        Route::post('/{mapel}/aktif', [MapelController::class, 'toggle'])->name('toggle');
+        Route::post('/penugasan', [MapelController::class, 'tugaskan'])->name('tugaskan');
+        Route::delete('/penugasan/{tugas}', [MapelController::class, 'lepas'])->name('lepas');
+        Route::post('/penugasan/salin/{ta}', [MapelController::class, 'salin'])->name('salin');
     });
 
     Route::middleware($izin(Izin::MigrasiJalankan))->prefix('sinkronisasi')->name('sinkronisasi.')->group(function () {

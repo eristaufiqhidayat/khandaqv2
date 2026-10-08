@@ -26,7 +26,7 @@ class AkunService
     public function buatStaf(string $nama, string $username, string $email, string $telepon, string $peran, User $admin): array
     {
         Otorisasi::pastikan($admin, Izin::PenggunaKelola);
-        if (! in_array($peran, ['admin', 'admin_office', 'keuangan'], true)) {
+        if (! in_array($peran, ['admin', 'admin_office', 'keuangan', 'guru'], true)) {
             throw new AturanDilanggar('Peran staf tidak dikenal.');
         }
         $password = self::acak();

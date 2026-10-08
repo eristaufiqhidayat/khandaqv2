@@ -1,0 +1,1 @@
+<div class="note warn" role="status">Belum ada kelas & mata pelajaran yang ditugaskan kepada Anda di tahun ajaran {{ $k->ta->nama }}. Minta Admin menambahkannya di menu <b>Mapel &amp; guru pengajar</b>.</div>

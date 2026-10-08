@@ -27,6 +27,15 @@ return [
         'email_maildir' => env('BSI_EMAIL_MAILDIR'),
     ],
 
+    // Modul guru: bobot nilai akhir (persen). Bila sebagian komponen belum diisi, bobot dibagi ulang di antara yang terisi.
+    'nilai' => [
+        'bobot' => [
+            'harian' => (int) env('KHANDAQ_BOBOT_HARIAN', 50),
+            'uts' => (int) env('KHANDAQ_BOBOT_UTS', 25),
+            'uas' => (int) env('KHANDAQ_BOBOT_UAS', 25),
+        ],
+    ],
+
     // Toleransi selisih tanggal antara laporan setoran wali dan mutasi BSI.
     'toleransi_hari_bank' => env('KHANDAQ_TOLERANSI_HARI_BANK', 2),
 

@@ -1,6 +1,6 @@
 @extends('layouts.staf')
 @section('judul', 'Hak akses')
-@php($namaPeran = ['admin' => 'Admin', 'admin_office' => 'Admin Office', 'keuangan' => 'Keuangan'])
+@php($namaPeran = ['admin' => 'Admin', 'admin_office' => 'Admin Office', 'keuangan' => 'Keuangan', 'guru' => 'Guru'])
 @section('halaman')
 <div class="top"><div><h1>Hak akses</h1><p class="muted">Menu mengikuti izin. Contoh: pindahkan "Tarif" ke Keuangan dengan mencentang di kolom Keuangan lalu menghapus centang di kolom Admin. Semua perubahan tercatat.</p></div></div>
 @error('hakakses')<div class="alert err" role="alert">{{ $message }}</div>@enderror

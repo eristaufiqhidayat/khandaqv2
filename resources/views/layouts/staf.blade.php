@@ -7,7 +7,10 @@
       <div><b>Khandaq</b><span>Tabungan Santri<br>Pesantren Modern Lembah Arafah</span></div>
     </div>
     <nav aria-label="Menu">
+      @php($grupSebelum = null)
       @foreach (\App\Support\MenuStaf::untuk(auth()->user()) as $m)
+        @if (($m['grup'] ?? null) && $m['grup'] !== $grupSebelum)<span class="eyebrow nav-grup">{{ $m['grup'] }}</span>@endif
+        @php($grupSebelum = $m['grup'] ?? null)
         <a href="{{ route($m['route']) }}" @if (request()->routeIs(str_ends_with($m['route'], '.index') ? \Illuminate\Support\Str::beforeLast($m['route'], '.').'.*' : $m['route'])) aria-current="page" @endif>{{ $m['label'] }}</a>
       @endforeach
     </nav>

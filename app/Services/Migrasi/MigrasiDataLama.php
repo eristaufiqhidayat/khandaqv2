@@ -245,6 +245,12 @@ class MigrasiDataLama
     private function kosongkan(): void
     {
         // Anak dulu, induk belakangan. Akun staf, peran/izin, dana, rekening, jenis tagihan tidak disentuh.
+        // Modul guru: nilai & penugasan memakai id santri/kelas/semester yang dibuat ulang. Mapel, soal, catatan harian tetap.
+        foreach (['nilai', 'guru_mengajar'] as $t) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($t)) {
+                DB::table($t)->delete();
+            }
+        }
         foreach (['peringatan', 'raport', 'pengeluaran', 'tabungan_mutasi', 'bank_mutasi', 'bank_impor', 'tagihan',
             'keringanan', 'pengecualian_potongan', 'jeda_potongan', 'tarif', 'pendaftaran', 'wali_santri', 'santri_kelas'] as $t) {
             DB::table($t)->delete();

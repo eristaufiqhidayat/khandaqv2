@@ -13,7 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-/** Menu "Input nilai siswa": nilai Harian (3 harian + tugas), UTS, UAS per kelas & mapel yang diajar. */
+/** Menu "Input nilai siswa": nilai Harian (H1–H5 + tugas), UTS, UAS per kelas & mapel yang diajar. */
 class NilaiController extends Controller
 {
     public function index(Request $request)
@@ -40,7 +40,8 @@ class NilaiController extends Controller
             'nilai' => 'array', 'nilai.*' => 'array',
             'nilai.*.*' => 'nullable',
             'nilai.*.harian_1' => 'nullable|integer|between:0,100', 'nilai.*.harian_2' => 'nullable|integer|between:0,100',
-            'nilai.*.harian_3' => 'nullable|integer|between:0,100', 'nilai.*.tugas' => 'nullable|integer|between:0,100',
+            'nilai.*.harian_3' => 'nullable|integer|between:0,100', 'nilai.*.harian_4' => 'nullable|integer|between:0,100',
+            'nilai.*.harian_5' => 'nullable|integer|between:0,100', 'nilai.*.tugas' => 'nullable|integer|between:0,100',
             'nilai.*.uts' => 'nullable|integer|between:0,100', 'nilai.*.uas' => 'nullable|integer|between:0,100',
             'nilai.*.catatan' => 'nullable|string|max:255',
         ], ['nilai.*.*.integer' => 'Nilai harus bilangan bulat 0–100.', 'nilai.*.*.between' => 'Nilai harus 0–100.']);

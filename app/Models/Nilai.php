@@ -15,7 +15,10 @@ class Nilai extends Model
 {
     use DicatatAudit;
 
-    public const HARIAN = ['harian_1', 'harian_2', 'harian_3', 'tugas'];
+    /** Kolom nilai harian => judul kolom (urutan tampil di Input & Rekap nilai). */
+    public const LABEL_HARIAN = ['harian_1' => 'H1', 'harian_2' => 'H2', 'harian_3' => 'H3', 'harian_4' => 'H4', 'harian_5' => 'H5', 'tugas' => 'Tugas'];
+
+    public const HARIAN = ['harian_1', 'harian_2', 'harian_3', 'harian_4', 'harian_5', 'tugas'];
 
     protected $table = 'nilai';
 

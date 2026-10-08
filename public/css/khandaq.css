@@ -311,8 +311,9 @@ nav .nav-grup:first-child{margin-top:0}
 .stack>.seg{align-self:flex-start;flex-wrap:wrap}
 input[type=month]{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
 .tabel-nilai{min-width:760px}
-.tabel-nilai input.skor{width:76px;text-align:center;padding:6px}
-.tabel-nilai input.catatan-nilai{min-width:160px;padding:6px 8px}
+.tabel-nilai input.skor{width:60px;text-align:center;padding:6px 4px}
+.tabel-nilai input.catatan-nilai{min-width:130px;padding:6px 8px}
+.tabel-nilai td,.tabel-nilai th{padding-left:6px;padding-right:6px}
 .tabel-nilai input.skor-rendah{background:var(--crit-soft);border-color:var(--crit)}
 .tabel-nilai input.skor-ok{background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 55%,var(--line))}
 .ringkas-nilai{margin-top:14px}

@@ -116,4 +116,39 @@ class SinkronisasiIdTetapTest extends KhandaqTestCase
         $baru = Santri::create(['nis' => 'BARU1', 'nama' => 'Santri Baru', 'jenis_kelamin' => 'laki-laki', 'status' => 'calon']);
         $this->assertGreaterThan(512, $baru->id);
     }
+
+    /**
+     * Sinkron pertama setelah id tetap diberlakukan: data di server masih ber-id lama hasil sinkron sebelumnya
+     * (santri/kelas dengan id otomatis). Nilai & penugasan harus tetap terpasang ke santri/kelas yang benar.
+     */
+    public function test_nilai_dan_penugasan_tetap_ada_saat_sinkron_pertama_dari_id_lama(): void
+    {
+        // Keadaan server sebelum PR id tetap: id otomatis, berbeda dengan id_siswa / id_kelas lama.
+        $ta = TahunAjaran::untukTanggal(\Carbon\CarbonImmutable::create(2026, 7, 1));
+        $sem = $ta->semester()->where('nomor', 1)->sole();
+        $kelasId = DB::table('kelas')->insertGetId(['id' => 37, 'nama' => '4A', 'tingkat' => 4, 'aktif' => true, 'legacy_id_kelas' => 7, 'created_at' => now(), 'updated_at' => now()]);
+        $ahmad = Santri::create(['id' => 1840, 'legacy_id_siswa' => 512, 'nis' => '240401', 'nama' => 'Ahmad Fauzi', 'jenis_kelamin' => 'laki-laki', 'status' => 'aktif']);
+        // Santri lain yang id otomatisnya kebetulan 512 (= id_siswa Ahmad): nilainya TIDAK boleh berpindah ke Ahmad.
+        $siti = Santri::create(['id' => 512, 'legacy_id_siswa' => 513, 'nis' => '240402', 'nama' => 'Siti Rahma', 'jenis_kelamin' => 'perempuan', 'status' => 'aktif']);
+        $guru = tap($this->buatUser('Guru'), fn ($u) => $u->update(['wajib_ganti_password' => false]))->assignRole('guru');
+        $mapel = Mapel::create(['nama' => 'Matematika', 'kkm' => 75]);
+        GuruMengajar::create(['user_id' => $guru->id, 'kelas_id' => $kelasId, 'mapel_id' => $mapel->id, 'tahun_ajaran_id' => $ta->id]);
+        Nilai::create(['santri_id' => $ahmad->id, 'mapel_id' => $mapel->id, 'semester_id' => $sem->id, 'kelas_id' => $kelasId, 'harian_1' => 91, 'uas' => 85]);
+        Nilai::create(['santri_id' => $siti->id, 'mapel_id' => $mapel->id, 'semester_id' => $sem->id, 'kelas_id' => $kelasId, 'harian_1' => 64]);
+        $catatan = CatatanHarianGuru::create(['user_id' => $guru->id, 'tanggal' => '2026-10-01', 'kelas_id' => $kelasId, 'kelas_nama' => '4A', 'mapel_id' => $mapel->id, 'materi' => 'Pecahan']);
+
+        $run = $this->sinkron($this->beriIzin($this->buatUser('Admin'), Izin::MigrasiJalankan));
+        $this->assertSame('selesai', $run->status, (string) $run->galat);
+
+        $this->assertSame([512, 513], Santri::orderBy('id')->pluck('id')->all());
+        $this->assertSame(['harian_1' => 91, 'uas' => 85], Nilai::where('santri_id', 512)->sole()->only(['harian_1', 'uas']), 'nilai Ahmad (id_siswa 512)');
+        $this->assertSame(64, Nilai::where('santri_id', 513)->sole()->harian_1, 'nilai Siti (id_siswa 513), bukan tertukar');
+        $this->assertSame([7], Nilai::pluck('kelas_id')->unique()->values()->all());
+        $t = GuruMengajar::sole();
+        $this->assertSame([$guru->id, 7, $mapel->id], [$t->user_id, $t->kelas_id, $t->mapel_id]);
+        $this->assertSame(TahunAjaran::where('tahun_mulai', 2026)->value('id'), $t->tahun_ajaran_id);
+        $this->assertSame(7, $catatan->fresh()->kelas_id);
+        $this->assertSame(0, $run->ringkasan['nilai (modul guru)']['dilewati']);
+        $this->assertSame(1, $run->ringkasan['guru_mengajar']['masuk']);
+    }
 }

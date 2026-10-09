@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * Modul guru: mata pelajaran, guru pengajar per kelas, nilai siswa, catatan harian guru, bank soal pilihan ganda.
  * Kelas dan santri memakai data yang sudah ada (kelas, santri_kelas).
  *
- * Sinkronisasi data lama (masa paralel) mengosongkan kelas/santri/semester, sehingga guru_mengajar dan nilai ikut
- * dikosongkan (lihat MigrasiDataLama::kosongkan). Mapel, bank soal, dan catatan harian tetap.
+ * Sinkronisasi data lama (masa paralel) membuat ulang kelas/santri/semester; guru_mengajar dan nilai disimpan dulu
+ * lalu dipasang kembali (lihat MigrasiDataLama::simpanModulGuru / pulihkanModulGuru). Mapel, bank soal, catatan harian tetap.
  */
 return new class extends Migration
 {

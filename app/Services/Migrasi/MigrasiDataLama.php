@@ -34,6 +34,11 @@ use Throwable;
  *    (mis. TDADM "Daftar ulang" -> tagihan DU). Baris yang tidak cocok = dibayar di luar tabungan:
  *    dicatat sebagai setoran + pembayaran (saldo tetap, riwayat & dana lengkap).
  *  - Semua dalam satu transaksi database: bila gagal di tengah, data baru tidak berubah.
+ *  - Id tetap antar sinkron: santri.id = data_siswa.id_siswa dan kelas.id = setup_kelas.id_kelas. Santri yang
+ *    didaftarkan di aplikasi baru mendapat nomor setelah id_siswa terbesar (auto-increment melanjutkan sendiri).
+ *  - Modul guru (nilai, guru_mengajar) tidak ada di aplikasi lama: disimpan dulu, lalu dipasang kembali setelah
+ *    santri/kelas/semester dibuat ulang (semester lewat tahun mulai + nomor). Baris yang santri/kelasnya tidak ada
+ *    lagi di data lama tercatat "dilewati" di ringkasan.
  */
 class MigrasiDataLama
 {
@@ -77,6 +82,9 @@ class MigrasiDataLama
     private array $dipakai = [];        // tagihan id yang sudah dipasangkan dengan baris tabel samping
 
     private ?int $taAktif = null;
+
+    /** Salinan modul guru sebelum dikosongkan: ['nilai' => [...], 'guru_mengajar' => [...], 'catatan' => [id => kelas_id]]. */
+    private array $simpananGuru = ['nilai' => [], 'guru_mengajar' => [], 'catatan' => []];
 
     /** @var callable(string $path, string $isi): void */
     private $simpanFile;
@@ -127,6 +135,7 @@ class MigrasiDataLama
             'Akun biaya & pengusul' => 'akunPengusul', 'Tarif' => 'tarif', 'Beasiswa' => 'beasiswa',
             'Buku tabungan' => 'tabungan', 'DSB, Daftar Ulang, PTS, PAS, laundry, buku' => 'tabelSamping',
             'Pengeluaran per dana' => 'pengeluaran', 'Tagihan bulan berjalan' => 'tagihanBerjalan', 'Mutasi BSI' => 'mutasiBsi', 'Raport' => 'raport', 'Foto santri' => 'fotoSantri', 'Kalender akademik' => 'kalender',
+            'Nilai & penugasan guru' => 'pulihkanModulGuru',
         ];
         try {
             DB::transaction(function () use ($tahap) {
@@ -245,7 +254,8 @@ class MigrasiDataLama
     private function kosongkan(): void
     {
         // Anak dulu, induk belakangan. Akun staf, peran/izin, dana, rekening, jenis tagihan tidak disentuh.
-        // Modul guru: nilai & penugasan memakai id santri/kelas/semester yang dibuat ulang. Mapel, soal, catatan harian tetap.
+        // Modul guru: nilai & penugasan disimpan dulu, dipasang lagi di pulihkanModulGuru(). Mapel & bank soal tidak disentuh.
+        $this->simpanModulGuru();
         foreach (['nilai', 'guru_mengajar'] as $t) {
             if (\Illuminate\Support\Facades\Schema::hasTable($t)) {
                 DB::table($t)->delete();
@@ -302,6 +312,7 @@ class MigrasiDataLama
             preg_match('/\d+/', $nama, $m);
             $jk = str_contains(strtoupper($nama), 'PUTRI') ? 'putri' : (str_contains(strtoupper($nama), 'PUTRA') ? 'putra' : null);
             $id = DB::table('kelas')->insertGetId([
+                ...$this->idTetap('kelas', $r->id_kelas),
                 'nama' => $nama, 'tingkat' => (int) ($m[0] ?? 1), 'jenis_kelamin' => $jk, 'aktif' => true,
                 'legacy_id_kelas' => $r->id_kelas, 'created_at' => $this->now, 'updated_at' => $this->now,
             ]);
@@ -333,6 +344,7 @@ class MigrasiDataLama
             }
             $status = match ($r->locked) { 'no' => 'aktif', 'baru' => 'calon', default => 'alumni' };
             $this->santriMap[$r->id_siswa] = DB::table('santri')->insertGetId([
+                ...$this->idTetap('santri', $r->id_siswa),
                 'legacy_id_siswa' => $r->id_siswa, 'nis' => $nis, 'nisn' => $this->kosongNull($r->nisn),
                 'nama' => trim((string) $r->nama_siswa) ?: 'Tanpa nama '.$r->id_siswa,
                 'jenis_kelamin' => $r->kelamin ?: 'laki-laki', 'tempat_lahir' => $this->kosongNull($r->tempat_lahir),
@@ -845,6 +857,90 @@ class MigrasiDataLama
             $this->masuk('tbl_kalender_akedemik');
         }
         $this->sumber('tbl_kalender_akedemik', $rows->count());
+    }
+
+    /** ['id' => id lama] agar id sama antar sinkron; kosong (id otomatis) bila id lama tidak sah atau sudah terpakai. */
+    private function idTetap(string $tabel, mixed $idLama): array
+    {
+        $id = filter_var($idLama, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($id === false || DB::table($tabel)->where('id', $id)->exists()) {
+            $this->catatan($tabel === 'santri' ? 'data_siswa' : 'setup_kelas', 'Id lama tidak sah/ganda: diberi id baru');
+
+            return [];
+        }
+
+        return ['id' => $id];
+    }
+
+    /** Simpan nilai, penugasan guru, dan kelas catatan harian sebelum santri/kelas/semester dikosongkan. */
+    private function simpanModulGuru(): void
+    {
+        $ada = fn (string $t) => \Illuminate\Support\Facades\Schema::hasTable($t);
+        if ($ada('nilai')) {
+            $this->simpananGuru['nilai'] = DB::table('nilai')->join('semester', 'semester.id', '=', 'nilai.semester_id')
+                ->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'semester.tahun_ajaran_id')
+                ->select('nilai.*', 'semester.nomor as _nomor', 'tahun_ajaran.tahun_mulai as _tahun')->get()
+                ->map(fn ($r) => (array) $r)->all();
+        }
+        if ($ada('guru_mengajar')) {
+            $this->simpananGuru['guru_mengajar'] = DB::table('guru_mengajar')->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'guru_mengajar.tahun_ajaran_id')
+                ->select('guru_mengajar.*', 'tahun_ajaran.tahun_mulai as _tahun')->get()->map(fn ($r) => (array) $r)->all();
+        }
+        if ($ada('catatan_harian_guru')) {
+            $this->simpananGuru['catatan'] = DB::table('catatan_harian_guru')->whereNotNull('kelas_id')->pluck('kelas_id', 'id')->all();
+        }
+    }
+
+    /** Pasang kembali modul guru ke santri/kelas (id tetap) dan semester/tahun ajaran (lewat tahun mulai + nomor). */
+    private function pulihkanModulGuru(): void
+    {
+        $santri = array_flip(array_values($this->santriMap));
+        $kelas = array_flip(array_keys($this->kelasNama));
+        $user = DB::table('users')->pluck('id')->flip()->all();
+        $mapel = DB::table('mapel')->pluck('id')->flip()->all();
+
+        $nilai = [];
+        foreach ($this->simpananGuru['nilai'] as $r) {
+            if (! isset($santri[$r['santri_id']], $kelas[$r['kelas_id']], $mapel[$r['mapel_id']])) {
+                $this->lewati('nilai (modul guru)', 'santri/kelas tidak ada lagi di data lama');
+
+                continue;
+            }
+            $ta = $this->taId((int) $r['_tahun']);
+            $r['semester_id'] = $this->semByTaNomor["{$ta}|{$r['_nomor']}"][0];
+            $r['diubah_oleh'] = isset($user[$r['diubah_oleh']]) ? $r['diubah_oleh'] : null;
+            unset($r['_tahun'], $r['_nomor']);
+            $nilai[] = $r;
+        }
+        foreach (array_chunk($nilai, 500) as $c) {
+            DB::table('nilai')->insert($c);
+        }
+        $this->sumber('nilai (modul guru)', count($this->simpananGuru['nilai']));
+        $this->masuk('nilai (modul guru)', count($nilai));
+
+        $tugas = [];
+        foreach ($this->simpananGuru['guru_mengajar'] as $r) {
+            if (! isset($kelas[$r['kelas_id']], $user[$r['user_id']], $mapel[$r['mapel_id']])) {
+                $this->lewati('guru_mengajar', 'kelas/guru/mapel tidak ada lagi');
+
+                continue;
+            }
+            $r['tahun_ajaran_id'] = $this->taId((int) $r['_tahun']);
+            unset($r['_tahun']);
+            $tugas[] = $r;
+        }
+        foreach (array_chunk($tugas, 500) as $c) {
+            DB::table('guru_mengajar')->insert($c);
+        }
+        $this->sumber('guru_mengajar', count($this->simpananGuru['guru_mengajar']));
+        $this->masuk('guru_mengajar', count($tugas));
+
+        // Catatan harian: kelas_id dikosongkan saat kelas dihapus; isi lagi bila kelasnya masih ada (id tetap).
+        foreach ($this->simpananGuru['catatan'] as $id => $k) {
+            if (isset($kelas[$k])) {
+                DB::table('catatan_harian_guru')->where('id', $id)->update(['kelas_id' => $k]);
+            }
+        }
     }
 
     /** Saldo per santri: cara hitung aplikasi lama vs ledger baru. */

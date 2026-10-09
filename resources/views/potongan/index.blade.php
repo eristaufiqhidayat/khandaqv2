@@ -20,6 +20,18 @@
       </tbody></table></div></div>
   </div>
   <div class="stack">
+    @foreach ($perSetoran as $ps)
+    <form class="card stack" method="post" action="{{ route('potongan.pemicu', $ps) }}">@csrf
+      <h2>{{ $ps->nama }}: uang masuk yang dipotong</h2>
+      <p class="hint">Setiap kredit terverifikasi dari jenis yang dicentang langsung dipotong {{ mb_strtolower($ps->nama) }}. Besarnya diatur di menu <b>Tarif</b>.</p>
+      <fieldset class="field"><legend class="sr-only">Jenis uang masuk</legend>
+        @foreach (\App\Models\JenisTagihan::PILIHAN_PEMICU as $kode => $lbl)
+          <label class="cek"><input type="checkbox" name="pemicu[]" value="{{ $kode }}" @checked(in_array($kode, $ps->pemicuKredit(), true))> {{ $lbl }}</label>
+        @endforeach
+      </fieldset>
+      <div><button class="btn p">Simpan</button></div>
+    </form>
+    @endforeach
     <form class="card stack" method="post" action="{{ route('potongan.kecualikan') }}">@csrf
       <h2>Kecualikan santri</h2><p class="hint">Mis. santri tidak ikut laundry. Tagihan dalam rentang itu yang belum dibayar ikut dibatalkan.</p>
       <div class="field"><label for="s">Santri</label><select id="s" name="santri_id" required><option value="">Pilih santri</option>@foreach ($daftarSantri as $s)<option value="{{ $s->id }}">{{ $s->nama }} ({{ $s->nis }})</option>@endforeach</select></div>

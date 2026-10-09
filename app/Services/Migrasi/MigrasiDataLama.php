@@ -83,7 +83,7 @@ class MigrasiDataLama
 
     private ?int $taAktif = null;
 
-    /** Salinan modul guru sebelum dikosongkan: ['nilai' => [...], 'guru_mengajar' => [...], 'catatan' => [id => kelas_id]]. */
+    /** Salinan modul guru sebelum dikosongkan (dengan kunci tetap santri/kelas/semester): ['nilai', 'guru_mengajar', 'catatan']. */
     private array $simpananGuru = ['nilai' => [], 'guru_mengajar' => [], 'catatan' => []];
 
     /** @var callable(string $path, string $isi): void */
@@ -872,44 +872,72 @@ class MigrasiDataLama
         return ['id' => $id];
     }
 
-    /** Simpan nilai, penugasan guru, dan kelas catatan harian sebelum santri/kelas/semester dikosongkan. */
+    /**
+     * Simpan nilai, penugasan guru, dan kelas catatan harian sebelum santri/kelas/semester dikosongkan.
+     * Rujukan disimpan dengan KUNCI TETAP (id_siswa/NIS, id_kelas/nama kelas, tahun mulai + nomor semester), bukan id,
+     * karena id bisa berbeda antara sebelum dan sesudah sinkron (mis. sinkron pertama setelah id tetap diberlakukan).
+     */
     private function simpanModulGuru(): void
     {
         $ada = fn (string $t) => \Illuminate\Support\Facades\Schema::hasTable($t);
+        $baris = fn ($q) => $q->get()->map(fn ($r) => (array) $r)->all();
         if ($ada('nilai')) {
-            $this->simpananGuru['nilai'] = DB::table('nilai')->join('semester', 'semester.id', '=', 'nilai.semester_id')
+            $this->simpananGuru['nilai'] = $baris(DB::table('nilai')
+                ->join('semester', 'semester.id', '=', 'nilai.semester_id')
                 ->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'semester.tahun_ajaran_id')
-                ->select('nilai.*', 'semester.nomor as _nomor', 'tahun_ajaran.tahun_mulai as _tahun')->get()
-                ->map(fn ($r) => (array) $r)->all();
+                ->join('santri', 'santri.id', '=', 'nilai.santri_id')
+                ->join('kelas', 'kelas.id', '=', 'nilai.kelas_id')
+                ->select('nilai.*', 'semester.nomor as _nomor', 'tahun_ajaran.tahun_mulai as _tahun',
+                    'santri.legacy_id_siswa as _id_siswa', 'santri.nis as _nis', 'kelas.legacy_id_kelas as _id_kelas', 'kelas.nama as _kelas'));
         }
         if ($ada('guru_mengajar')) {
-            $this->simpananGuru['guru_mengajar'] = DB::table('guru_mengajar')->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'guru_mengajar.tahun_ajaran_id')
-                ->select('guru_mengajar.*', 'tahun_ajaran.tahun_mulai as _tahun')->get()->map(fn ($r) => (array) $r)->all();
+            $this->simpananGuru['guru_mengajar'] = $baris(DB::table('guru_mengajar')
+                ->join('tahun_ajaran', 'tahun_ajaran.id', '=', 'guru_mengajar.tahun_ajaran_id')
+                ->join('kelas', 'kelas.id', '=', 'guru_mengajar.kelas_id')
+                ->select('guru_mengajar.*', 'tahun_ajaran.tahun_mulai as _tahun', 'kelas.legacy_id_kelas as _id_kelas', 'kelas.nama as _kelas'));
         }
         if ($ada('catatan_harian_guru')) {
-            $this->simpananGuru['catatan'] = DB::table('catatan_harian_guru')->whereNotNull('kelas_id')->pluck('kelas_id', 'id')->all();
+            $this->simpananGuru['catatan'] = $baris(DB::table('catatan_harian_guru')->join('kelas', 'kelas.id', '=', 'catatan_harian_guru.kelas_id')
+                ->select('catatan_harian_guru.id', 'kelas.legacy_id_kelas as _id_kelas', 'kelas.nama as _kelas'));
         }
     }
 
-    /** Pasang kembali modul guru ke santri/kelas (id tetap) dan semester/tahun ajaran (lewat tahun mulai + nomor). */
+    /** Id kelas sesudah sinkron untuk rujukan yang disimpan: lewat id_kelas lama, lalu nama kelas. */
+    private function kelasBaru(array $r): ?int
+    {
+        return ($r['_id_kelas'] !== null ? ($this->kelasMap[(int) $r['_id_kelas']] ?? null) : null)
+            ?? (array_flip($this->kelasNama)[$r['_kelas']] ?? null);
+    }
+
+    /** Pasang kembali modul guru ke santri/kelas/semester/tahun ajaran hasil sinkron, lewat kunci tetap. */
     private function pulihkanModulGuru(): void
     {
-        $santri = array_flip(array_values($this->santriMap));
-        $kelas = array_flip(array_keys($this->kelasNama));
+        $santriNis = DB::table('santri')->pluck('id', 'nis')->all();
         $user = DB::table('users')->pluck('id')->flip()->all();
         $mapel = DB::table('mapel')->pluck('id')->flip()->all();
 
         $nilai = [];
+        $sudah = [];
         foreach ($this->simpananGuru['nilai'] as $r) {
-            if (! isset($santri[$r['santri_id']], $kelas[$r['kelas_id']], $mapel[$r['mapel_id']])) {
+            $s = ($r['_id_siswa'] !== null ? ($this->santriMap[(int) $r['_id_siswa']] ?? null) : null) ?? ($santriNis[$r['_nis']] ?? null);
+            $k = $this->kelasBaru($r);
+            if (! $s || ! $k || ! isset($mapel[$r['mapel_id']])) {
                 $this->lewati('nilai (modul guru)', 'santri/kelas tidak ada lagi di data lama');
 
                 continue;
             }
-            $ta = $this->taId((int) $r['_tahun']);
-            $r['semester_id'] = $this->semByTaNomor["{$ta}|{$r['_nomor']}"][0];
+            $sem = $this->semByTaNomor[$this->taId((int) $r['_tahun']).'|'.$r['_nomor']][0];
+            if (isset($sudah["{$s}|{$r['mapel_id']}|{$sem}"])) {
+                $this->lewati('nilai (modul guru)', 'ganda untuk santri, mapel & semester yang sama');
+
+                continue;
+            }
+            $sudah["{$s}|{$r['mapel_id']}|{$sem}"] = true;
+            $r['santri_id'] = $s;
+            $r['kelas_id'] = $k;
+            $r['semester_id'] = $sem;
             $r['diubah_oleh'] = isset($user[$r['diubah_oleh']]) ? $r['diubah_oleh'] : null;
-            unset($r['_tahun'], $r['_nomor']);
+            unset($r['_tahun'], $r['_nomor'], $r['_id_siswa'], $r['_nis'], $r['_id_kelas'], $r['_kelas']);
             $nilai[] = $r;
         }
         foreach (array_chunk($nilai, 500) as $c) {
@@ -919,14 +947,24 @@ class MigrasiDataLama
         $this->masuk('nilai (modul guru)', count($nilai));
 
         $tugas = [];
+        $sudah = [];
         foreach ($this->simpananGuru['guru_mengajar'] as $r) {
-            if (! isset($kelas[$r['kelas_id']], $user[$r['user_id']], $mapel[$r['mapel_id']])) {
+            $k = $this->kelasBaru($r);
+            if (! $k || ! isset($user[$r['user_id']], $mapel[$r['mapel_id']])) {
                 $this->lewati('guru_mengajar', 'kelas/guru/mapel tidak ada lagi');
 
                 continue;
             }
-            $r['tahun_ajaran_id'] = $this->taId((int) $r['_tahun']);
-            unset($r['_tahun']);
+            $ta = $this->taId((int) $r['_tahun']);
+            if (isset($sudah["{$r['user_id']}|{$k}|{$r['mapel_id']}|{$ta}"])) {
+                $this->lewati('guru_mengajar', 'penugasan ganda');
+
+                continue;
+            }
+            $sudah["{$r['user_id']}|{$k}|{$r['mapel_id']}|{$ta}"] = true;
+            $r['kelas_id'] = $k;
+            $r['tahun_ajaran_id'] = $ta;
+            unset($r['_tahun'], $r['_id_kelas'], $r['_kelas']);
             $tugas[] = $r;
         }
         foreach (array_chunk($tugas, 500) as $c) {
@@ -935,10 +973,10 @@ class MigrasiDataLama
         $this->sumber('guru_mengajar', count($this->simpananGuru['guru_mengajar']));
         $this->masuk('guru_mengajar', count($tugas));
 
-        // Catatan harian: kelas_id dikosongkan saat kelas dihapus; isi lagi bila kelasnya masih ada (id tetap).
-        foreach ($this->simpananGuru['catatan'] as $id => $k) {
-            if (isset($kelas[$k])) {
-                DB::table('catatan_harian_guru')->where('id', $id)->update(['kelas_id' => $k]);
+        // Catatan harian: kelas_id dikosongkan saat kelas dihapus; sambungkan lagi ke kelas hasil sinkron.
+        foreach ($this->simpananGuru['catatan'] as $r) {
+            if ($k = $this->kelasBaru($r)) {
+                DB::table('catatan_harian_guru')->where('id', $r['id'])->update(['kelas_id' => $k]);
             }
         }
     }

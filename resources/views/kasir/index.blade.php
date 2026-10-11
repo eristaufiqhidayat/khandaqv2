@@ -9,6 +9,7 @@
 @section('halaman')
 <div class="top"><div><h1>Kasir santri</h1><p class="muted">Setor tunai, catat transfer, tarik uang saku, dan bayar tagihan dari saldo.</p></div></div>
 @error('kasir')<div class="alert err" role="alert">{{ $message }}</div>@enderror
+@error('tanggal')<div class="alert err" role="alert">{{ $message }}</div>@enderror
 
 <div class="split">
   <div class="card stack">
@@ -41,6 +42,11 @@
           <div class="form-baris">
             <div class="field"><label for="sn">Nominal (Rp)</label><input id="sn" name="nominal" type="number" min="1000" step="1" required value="{{ old('nominal') }}"></div>
             <div class="field"><label for="sc">Cara</label><select id="sc" name="cara"><option value="tunai">Tunai (langsung masuk)</option><option value="transfer" @selected(old('cara') === 'transfer')>Transfer (menunggu verifikasi)</option></select></div>
+          </div>
+          <div class="field"><label for="st">Tanggal setoran</label>
+            <input id="st" name="tanggal" type="date" required value="{{ old('tanggal', $hariIni->toDateString()) }}" max="{{ $hariIni->toDateString() }}"
+              @if ($batasTerkunci) min="{{ $batasTerkunci->addDay()->toDateString() }}" @endif aria-describedby="st-h">
+            <span class="hint" id="st-h">{{ 'Untuk transfer, isi tanggal uang dikirim.'.($batasTerkunci ? ' Buku s.d. '.$batasTerkunci->translatedFormat('F Y').' sudah ditutup.' : '') }}</span>
           </div>
           <div class="field"><label for="sb">Bukti transfer (opsional, jpg/png/pdf)</label><input id="sb" name="bukti" type="file" accept=".jpg,.jpeg,.png,.pdf"></div>
           <div><button class="btn p">Simpan setoran</button></div>

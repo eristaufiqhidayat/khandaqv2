@@ -8,6 +8,7 @@ use App\Models\BankMutasi;
 use App\Models\Rekening;
 use App\Models\TabunganMutasi;
 use App\Models\TahunAjaran;
+use App\Models\TutupBuku;
 use App\Models\User;
 use App\Services\AkunService;
 use Carbon\CarbonImmutable;
@@ -62,6 +63,45 @@ class LayarKasirDanStatusTest extends KhandaqTestCase
         $this->from(route('kasir.index', ['santri' => $s->id]))
             ->post(route('kasir.tarik', $s), ['nominal' => 500000])->assertSessionHasErrors(['kasir' => 'Saldo tidak cukup untuk penarikan.']);
         $this->assertSame(150000, $s->saldo());
+    }
+
+    public function test_setoran_memakai_tanggal_yang_dipilih_kasir(): void
+    {
+        $this->travelTo(CarbonImmutable::create(2026, 10, 11, 8, 15));
+        $s = $this->santri('3 PUTRA', '172');
+        $this->actingAs($this->staf('admin_office', 'kasir'));
+
+        // Form menampilkan kolom tanggal berisi hari ini dan tidak bisa memilih tanggal ke depan.
+        $this->get(route('kasir.index', ['santri' => $s->id]))->assertOk()
+            ->assertSee('Tanggal setoran')->assertSee('name="tanggal"', false)->assertSee('value="2026-10-11"', false)->assertSee('max="2026-10-11"', false);
+
+        // Tanpa tanggal (atau hari ini) = saat ini.
+        $this->post(route('kasir.setor', $s), ['nominal' => 100000, 'cara' => 'tunai'])->assertSessionHas('status');
+        $this->assertSame('2026-10-11 08:15', TabunganMutasi::latest('id')->first()->tanggal->format('Y-m-d H:i'));
+
+        // Tanggal lampau: tersimpan pada tanggal itu, jam pencatatan.
+        $this->post(route('kasir.setor', $s), ['nominal' => 250000, 'cara' => 'transfer', 'tanggal' => '2026-10-08'])
+            ->assertSessionHas('status', fn ($v) => str_starts_with($v, 'Transfer Rp250.000 (tanggal 08 ') && str_ends_with($v, '2026) dicatat dan menunggu verifikasi.'));
+        $this->assertSame('2026-10-08 08:15', TabunganMutasi::latest('id')->first()->tanggal->format('Y-m-d H:i'));
+
+        // Tanggal ke depan ditolak.
+        $this->post(route('kasir.setor', $s), ['nominal' => 50000, 'cara' => 'tunai', 'tanggal' => '2026-10-12'])
+            ->assertSessionHasErrors(['tanggal' => 'Tanggal setoran tidak boleh melewati hari ini.']);
+        $this->assertSame(2, TabunganMutasi::where('santri_id', $s->id)->count());
+    }
+
+    public function test_setoran_ke_bulan_yang_sudah_tutup_buku_ditolak_dengan_pesan(): void
+    {
+        $this->travelTo(CarbonImmutable::create(2026, 10, 11, 9, 0));
+        $s = $this->santri('3 PUTRA', '173');
+        $this->actingAs($kasir = $this->staf('admin_office', 'kasir'));
+        TutupBuku::create(['bulan' => '2026-09-01', 'saldo_titipan' => 0, 'ditutup_oleh' => $kasir->id]);
+
+        $this->get(route('kasir.index', ['santri' => $s->id]))->assertSee('min="2026-10-01"', false)->assertSee('sudah ditutup');
+        $this->from(route('kasir.index', ['santri' => $s->id]))
+            ->post(route('kasir.setor', $s), ['nominal' => 100000, 'cara' => 'tunai', 'tanggal' => '2026-09-30'])
+            ->assertSessionHasErrors('kasir');
+        $this->assertSame(0, $s->saldo());
     }
 
     public function test_transfer_dicatat_kasir_lalu_diverifikasi_petugas_lain_bukan_pencatat(): void

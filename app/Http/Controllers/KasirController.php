@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\StatusSantri;
 use App\Exceptions\AturanDilanggar;
+use App\Exceptions\PeriodeTerkunci;
 use App\Models\Santri;
 use App\Models\Tagihan;
+use App\Models\TutupBuku;
 use App\Services\TabunganService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +38,7 @@ class KasirController extends Controller
             'tagihan' => $santri ? Tagihan::terbuka()->where('santri_id', $santri->id)->with('jenisTagihan')->orderBy('jatuh_tempo')->get() : collect(),
             'mutasi' => $santri ? $santri->mutasi()->with('pencatat')->latest('tanggal')->latest('id')->limit(15)->get() : collect(),
             'hariIni' => CarbonImmutable::now(),
+            'batasTerkunci' => TutupBuku::batasTerkunci(),
         ]);
     }
 
@@ -46,14 +49,31 @@ class KasirController extends Controller
             'cara' => 'required|in:tunai,transfer',
             'bukti' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
             'keterangan' => 'nullable|string|max:200',
-        ]);
+            'tanggal' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+        ], ['tanggal.before_or_equal' => 'Tanggal setoran tidak boleh melewati hari ini.']);
+        $tanggal = $this->tanggalSetoran($d['tanggal'] ?? null);
         $bukti = $request->file('bukti')?->store('bukti-setoran');
+        $padaTanggal = $tanggal->isToday() ? '' : ' (tanggal '.$tanggal->translatedFormat('d M Y').')';
 
         return $this->jalankan($santri, fn () => $this->tabungan->catatSetoran(
-            $santri, (int) $d['nominal'], CarbonImmutable::now(), $d['cara'] === 'transfer', $request->user(), $bukti, $d['keterangan'] ?? null,
+            $santri, (int) $d['nominal'], $tanggal, $d['cara'] === 'transfer', $request->user(), $bukti, $d['keterangan'] ?? null,
         ), $d['cara'] === 'transfer'
-            ? 'Transfer '.$this->rp($d['nominal']).' dicatat dan menunggu verifikasi.'
-            : 'Setoran tunai '.$this->rp($d['nominal']).' masuk ke saldo.');
+            ? 'Transfer '.$this->rp($d['nominal']).$padaTanggal.' dicatat dan menunggu verifikasi.'
+            : 'Setoran tunai '.$this->rp($d['nominal']).$padaTanggal.' masuk ke saldo.');
+    }
+
+    /**
+     * Tanggal setoran dari form. Kosong/hari ini = saat ini. Tanggal lampau (setoran yang baru dicatat belakangan)
+     * memakai jam saat pencatatan pada tanggal itu, agar urutan riwayat di hari tersebut tetap wajar.
+     */
+    private function tanggalSetoran(?string $tanggal): CarbonImmutable
+    {
+        $sekarang = CarbonImmutable::now();
+        if ($tanggal === null || $tanggal === $sekarang->toDateString()) {
+            return $sekarang;
+        }
+
+        return CarbonImmutable::createFromFormat('Y-m-d', $tanggal)->setTimeFrom($sekarang);
     }
 
     public function tarik(Request $request, Santri $santri): RedirectResponse
@@ -79,7 +99,7 @@ class KasirController extends Controller
     {
         try {
             $aksi();
-        } catch (AturanDilanggar $e) {
+        } catch (AturanDilanggar|PeriodeTerkunci $e) {
             return back()->withInput()->withErrors(['kasir' => $e->getMessage()]);
         }
 

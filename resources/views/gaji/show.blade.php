@@ -16,9 +16,13 @@
 @if ($galat)<div class="note warn" style="margin-bottom:14px">{{ count($galat) }} baris perlu diperbaiki di <a href="{{ route('gaji.pegawai') }}">Data pegawai</a> sebelum berkas bisa diunduh.</div>@endif
 
 @if ($p->final())
-  <div class="card"><div class="tw"><table><thead><tr><th>No</th><th>Penerima</th><th>Rekening</th><th>Pesan</th><th class="r">Nominal</th></tr></thead><tbody>
+  <div class="card"><div class="tw"><table data-sortable><thead><tr><th>No</th>
+    <th data-sort="text"><button type="button" class="th-sort">Penerima</button></th>
+    <th class="num" data-sort="text"><button type="button" class="th-sort">Rekening</button></th>
+    <th>Pesan</th>
+    <th class="r" data-sort="num"><button type="button" class="th-sort">Nominal</button></th></tr></thead><tbody>
   @foreach ($p->rincian as $i => $r)
-    <tr><td class="num">{{ $i + 1 }}</td><td>{{ $r->pegawai->nama }}<br><span class="hint">{{ $r->nama_rekening }}</span></td>
+    <tr><td class="num">{{ $i + 1 }}</td><td><span class="sv">{{ $r->pegawai->nama }}</span><br><span class="hint">{{ $r->nama_rekening }}</span></td>
       <td class="num">{{ $r->no_rekening }}</td><td>{{ $r->pesan ?: $p->pesan }}</td><td class="r rp">{{ $rp($r->nominal) }}</td></tr>
   @endforeach
   </tbody><tfoot><tr><th colspan="4">Total</th><th class="r rp">{{ $rp($total) }}</th></tr></tfoot></table></div></div>
@@ -31,7 +35,11 @@
     <div class="field"><label for="ps">Pesan bawaan (maks. 65)</label><input id="ps" name="pesan" type="text" required maxlength="65" value="{{ old('pesan', $p->pesan) }}"></div>
   </div>
 
-  <div class="card"><div class="tw"><table><thead><tr><th>No</th><th>Penerima</th><th>Rekening BSI</th><th style="min-width:130px">Nominal (Rp)</th><th>Pesan khusus</th><th>Hapus</th></tr></thead><tbody>
+  <div class="card"><div class="tw"><table data-sortable><thead><tr><th>No</th>
+    <th data-sort="text"><button type="button" class="th-sort">Penerima</button></th>
+    <th data-sort="text"><button type="button" class="th-sort">Rekening BSI</button></th>
+    <th class="r" style="min-width:130px" data-sort="num"><button type="button" class="th-sort">Nominal (Rp)</button></th>
+    <th>Pesan khusus</th><th>Hapus</th></tr></thead><tbody>
   @foreach ($p->rincian as $i => $r)
     @php($g = $galat[$r->id] ?? [])
     <tr @if ($g) style="background:var(--crit-soft)" @endif>
@@ -62,4 +70,38 @@
   </div>
 </div>
 @endif
+<script>
+(() => {
+  // Urutkan baris tabel gaji (tampilan terkunci maupun form entri draf) dengan klik judul kolom.
+  document.querySelectorAll('table[data-sortable]').forEach((tabel) => {
+    const ths = [...tabel.querySelectorAll('thead th[data-sort]')];
+    const nilaiSel = (td, tipe) => {
+      const input = td.querySelector('input[type="text"], input[type="number"]');
+      const teks = (input ? input.value : (td.querySelector('.sv, a')?.textContent ?? td.textContent)).trim();
+      return tipe === 'num' ? (parseInt(teks.replace(/\D/g, ''), 10) || 0) : teks.toLowerCase();
+    };
+    ths.forEach((th) => {
+      const tombol = th.querySelector('.th-sort');
+      tombol.addEventListener('click', () => {
+        const kolom = [...th.parentElement.children].indexOf(th);
+        const tipe = th.dataset.sort;
+        const naik = th.getAttribute('aria-sort') !== 'ascending';
+        ths.forEach((h) => h.removeAttribute('aria-sort'));
+        th.setAttribute('aria-sort', naik ? 'ascending' : 'descending');
+        const tbody = tabel.querySelector('tbody');
+        const baris = [...tbody.querySelectorAll('tr')];
+        baris.sort((a, b) => {
+          const va = nilaiSel(a.children[kolom], tipe), vb = nilaiSel(b.children[kolom], tipe);
+          const cmp = tipe === 'num' ? va - vb : va.localeCompare(vb, 'id');
+          return naik ? cmp : -cmp;
+        });
+        baris.forEach((tr, i) => {
+          tbody.appendChild(tr);
+          tr.children[0].textContent = i + 1;
+        });
+      });
+    });
+  });
+})();
+</script>
 @endsection

@@ -80,6 +80,13 @@ tr:last-child td{border-bottom:0}
 td.r,th.r{text-align:right}
 td.r{white-space:nowrap}
 tbody tr:hover{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+th[data-sort]{padding:0}
+th[data-sort] .th-sort{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:4px;width:100%;height:100%;padding:8px 10px;cursor:pointer;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit}
+th[data-sort] .th-sort:hover,th[data-sort] .th-sort:focus-visible{color:var(--ink-1)}
+th[data-sort] .th-sort::after{content:"⇕";font-size:10px;opacity:.35}
+th[aria-sort="ascending"] .th-sort::after{content:"▲";opacity:1;color:var(--accent)}
+th[aria-sort="descending"] .th-sort::after{content:"▼";opacity:1;color:var(--accent)}
+th[data-sort].r .th-sort{justify-content:flex-end}
 
 /* chips & buttons */
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;background:var(--surface-2);color:var(--ink-2)}

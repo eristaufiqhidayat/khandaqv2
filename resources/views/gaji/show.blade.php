@@ -35,7 +35,8 @@
     <div class="field"><label for="ps">Pesan bawaan (maks. 65)</label><input id="ps" name="pesan" type="text" required maxlength="65" value="{{ old('pesan', $p->pesan) }}"></div>
   </div>
 
-  <div class="card"><div class="tw"><table data-sortable><thead><tr><th>No</th>
+  <div class="card"><div class="tw"><table data-sortable><thead><tr>
+    <th data-sort="num" style="width:62px"><button type="button" class="th-sort">No</button></th>
     <th data-sort="text"><button type="button" class="th-sort">Penerima</button></th>
     <th data-sort="text"><button type="button" class="th-sort">Rekening BSI</button></th>
     <th class="r" style="min-width:130px" data-sort="num"><button type="button" class="th-sort">Nominal (Rp)</button></th>
@@ -43,7 +44,7 @@
   @foreach ($p->rincian as $i => $r)
     @php($g = $galat[$r->id] ?? [])
     <tr @if ($g) style="background:var(--crit-soft)" @endif>
-      <td class="num">{{ $i + 1 }}</td>
+      <td><input name="rincian[{{ $r->id }}][urutan]" type="number" min="1" step="1" required value="{{ old("rincian.{$r->id}.urutan", $r->urutan ?: $i + 1) }}" aria-label="No urut {{ $r->pegawai->nama }}" class="num" style="width:56px;text-align:right"></td>
       <td><a href="{{ route('gaji.pegawai.edit', $r->pegawai) }}">{{ $r->pegawai->nama }}</a>@if ($r->pegawai->jabatan)<br><span class="hint">{{ $r->pegawai->jabatan }}</span>@endif
         @foreach ($g as $e)<br><span style="color:var(--crit);font-size:12.5px">{{ $e }}</span>@endforeach</td>
       <td class="num">{{ $r->pegawai->no_rekening }}<br><span class="hint">{{ $r->pegawai->nama_rekening }}</span></td>
@@ -58,7 +59,7 @@
       <div class="row" style="flex-wrap:wrap;gap:6px 16px;margin-top:8px">@foreach ($bisaDitambah as $pg)<label class="cek"><input type="checkbox" name="tambah[]" value="{{ $pg->id }}"> {{ $pg->nama }}</label>@endforeach</div></details>
   @endif
   </div>
-  <div class="row"><button class="btn p">Simpan</button><span class="hint">Simpan dulu setelah mengubah nominal, baru unduh berkas.</span></div>
+  <div class="row"><button class="btn p">Simpan</button><span class="hint">Klik judul kolom untuk urutkan tampilan, atau ketik langsung di kolom "No" lalu klik judul "No" untuk menerapkan. Simpan untuk menyimpan nominal & urutan — urutan ini juga menentukan urutan baris di berkas BSI yang diunduh.</span></div>
 </form>
 
 <div class="card stack" style="margin-top:16px">
@@ -97,7 +98,8 @@
         });
         baris.forEach((tr, i) => {
           tbody.appendChild(tr);
-          tr.children[0].textContent = i + 1;
+          const noTd = tr.children[0], noInput = noTd.querySelector('input');
+          if (noInput) { noInput.value = i + 1; } else { noTd.textContent = i + 1; }
         });
       });
     });

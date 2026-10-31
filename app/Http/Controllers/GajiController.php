@@ -70,6 +70,7 @@ class GajiController extends Controller
             'pesan' => 'required|string|max:65',
             'rincian' => 'array',
             'rincian.*.nominal' => 'required|integer|min:0|max:999999999',
+            'rincian.*.urutan' => 'nullable|integer|min:1|max:9999',
             'rincian.*.pesan' => 'nullable|string|max:65',
             'rincian.*.hapus' => 'nullable|boolean',
             'tambah' => 'nullable|array',
@@ -88,7 +89,8 @@ class GajiController extends Controller
                     continue;
                 }
                 $pesan = PayrollBsi::bersih($isi['pesan'] ?? '', 65);
-                $r->update(['nominal' => (int) $isi['nominal'], 'pesan' => $pesan !== '' && $pesan !== $penggajian->pesan ? $pesan : null]);
+                $r->update(['nominal' => (int) $isi['nominal'], 'pesan' => $pesan !== '' && $pesan !== $penggajian->pesan ? $pesan : null]
+                    + (isset($isi['urutan']) ? ['urutan' => (int) $isi['urutan']] : []));
             }
             $urutan = (int) $penggajian->rincian()->max('urutan');
             foreach (Pegawai::whereIn('id', $d['tambah'] ?? [])->urut()->get() as $pg) {

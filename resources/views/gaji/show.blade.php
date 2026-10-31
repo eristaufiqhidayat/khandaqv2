@@ -16,7 +16,7 @@
 @if ($galat)<div class="note warn" style="margin-bottom:14px">{{ count($galat) }} baris perlu diperbaiki di <a href="{{ route('gaji.pegawai') }}">Data pegawai</a> sebelum berkas bisa diunduh.</div>@endif
 
 @if ($p->final())
-  <div class="card"><div class="tw"><table data-sortable><thead><tr><th>No</th>
+  <div class="card"><div class="tw"><table data-sortable data-renomor="0"><thead><tr><th>No</th>
     <th data-sort="text"><button type="button" class="th-sort">Penerima</button></th>
     <th class="num" data-sort="text"><button type="button" class="th-sort">Rekening</button></th>
     <th>Pesan</th>
@@ -35,7 +35,7 @@
     <div class="field"><label for="ps">Pesan bawaan (maks. 65)</label><input id="ps" name="pesan" type="text" required maxlength="65" value="{{ old('pesan', $p->pesan) }}"></div>
   </div>
 
-  <div class="card"><div class="tw"><table data-sortable><thead><tr>
+  <div class="card"><div class="tw"><table data-sortable data-renomor="0"><thead><tr>
     <th data-sort="num" style="width:62px"><button type="button" class="th-sort">No</button></th>
     <th data-sort="text"><button type="button" class="th-sort">Penerima</button></th>
     <th data-sort="text"><button type="button" class="th-sort">Rekening BSI</button></th>
@@ -71,39 +71,5 @@
   </div>
 </div>
 @endif
-<script>
-(() => {
-  // Urutkan baris tabel gaji (tampilan terkunci maupun form entri draf) dengan klik judul kolom.
-  document.querySelectorAll('table[data-sortable]').forEach((tabel) => {
-    const ths = [...tabel.querySelectorAll('thead th[data-sort]')];
-    const nilaiSel = (td, tipe) => {
-      const input = td.querySelector('input[type="text"], input[type="number"]');
-      const teks = (input ? input.value : (td.querySelector('.sv, a')?.textContent ?? td.textContent)).trim();
-      return tipe === 'num' ? (parseInt(teks.replace(/\D/g, ''), 10) || 0) : teks.toLowerCase();
-    };
-    ths.forEach((th) => {
-      const tombol = th.querySelector('.th-sort');
-      tombol.addEventListener('click', () => {
-        const kolom = [...th.parentElement.children].indexOf(th);
-        const tipe = th.dataset.sort;
-        const naik = th.getAttribute('aria-sort') !== 'ascending';
-        ths.forEach((h) => h.removeAttribute('aria-sort'));
-        th.setAttribute('aria-sort', naik ? 'ascending' : 'descending');
-        const tbody = tabel.querySelector('tbody');
-        const baris = [...tbody.querySelectorAll('tr')];
-        baris.sort((a, b) => {
-          const va = nilaiSel(a.children[kolom], tipe), vb = nilaiSel(b.children[kolom], tipe);
-          const cmp = tipe === 'num' ? va - vb : va.localeCompare(vb, 'id');
-          return naik ? cmp : -cmp;
-        });
-        baris.forEach((tr, i) => {
-          tbody.appendChild(tr);
-          const noTd = tr.children[0], noInput = noTd.querySelector('input');
-          if (noInput) { noInput.value = i + 1; } else { noTd.textContent = i + 1; }
-        });
-      });
-    });
-  });
-})();
-</script>
+@include('gaji._tabel-urut')
 @endsection

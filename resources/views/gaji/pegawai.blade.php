@@ -9,17 +9,26 @@
 
 <div class="grid" style="grid-template-columns:minmax(0,1fr) 320px;align-items:start">
   <div class="stack">
-    <div class="card"><div class="tw"><table><thead><tr><th>Nama</th><th>Rekening BSI</th><th>Notifikasi</th><th class="r">Nominal tetap</th><th></th></tr></thead><tbody>
+    <div class="card"><div class="tw"><table data-sortable><thead><tr>
+      <th data-sort="num" style="width:70px"><button type="button" class="th-sort">Urutan</button></th>
+      <th data-sort="text"><button type="button" class="th-sort">Nama</button></th>
+      <th data-sort="text"><button type="button" class="th-sort">Rekening BSI</button></th>
+      <th>Notifikasi</th>
+      <th class="r" data-sort="num"><button type="button" class="th-sort">Nominal tetap</button></th><th></th></tr></thead><tbody>
     @forelse ($pegawai as $pg)
-      <tr @unless ($pg->aktif) style="opacity:.6" @endunless><td>{{ $pg->nama }}@if ($pg->jabatan)<br><span class="hint">{{ $pg->jabatan }}</span>@endif @unless ($pg->aktif)<br><span class="chip">Nonaktif</span>@endunless</td>
+      <tr @unless ($pg->aktif) style="opacity:.6" @endunless>
+        <td class="num">{{ $pg->urutan }}</td>
+        <td><span class="sv">{{ $pg->nama }}</span>@if ($pg->jabatan)<br><span class="hint">{{ $pg->jabatan }}</span>@endif @unless ($pg->aktif)<br><span class="chip">Nonaktif</span>@endunless</td>
         <td class="num">{{ $pg->no_rekening }}<br><span class="hint">a.n. {{ $pg->nama_rekening }}</span></td>
         <td><span class="hint">{{ $pg->email ?: '—' }}<br>{{ $pg->telepon ?: '—' }}</span></td>
         <td class="r rp">{{ $rp($pg->nominal_tetap) }}</td>
         <td class="r"><a class="btn sm" href="{{ route('gaji.pegawai.edit', $pg) }}">Ubah</a></td></tr>
     @empty
-      <tr><td colspan="5" class="muted">Belum ada pegawai. Unggah berkas payroll BSI terakhir di samping untuk mengisi daftar sekaligus.</td></tr>
+      <tr><td colspan="6" class="muted">Belum ada pegawai. Unggah berkas payroll BSI terakhir di samping untuk mengisi daftar sekaligus.</td></tr>
     @endforelse
     </tbody></table></div></div>
+    <p class="hint">Urutan menentukan posisi pegawai saat penggajian baru dibuat dan di berkas BSI yang diunduh. Ubah lewat tombol "Ubah" tiap pegawai (field "Urutan di berkas"); klik judul kolom di sini untuk mengurutkan tampilan.</p>
+    @include('gaji._tabel-urut')
     @if ($nonaktif)<p class="hint">@if ($semua)<a href="{{ route('gaji.pegawai') }}">Sembunyikan {{ $nonaktif }} pegawai nonaktif</a>@else<a href="{{ route('gaji.pegawai', ['tampil' => 'semua']) }}">Tampilkan {{ $nonaktif }} pegawai nonaktif</a>@endif</p>@endif
   </div>
 

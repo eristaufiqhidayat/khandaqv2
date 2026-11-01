@@ -187,7 +187,7 @@ class TabunganService
                 'status' => StatusMutasi::Terverifikasi, 'dana_id' => $asal->id,
                 'dicatat_oleh' => $petugas->id, 'diverifikasi_oleh' => $petugas->id, 'diverifikasi_pada' => CarbonImmutable::now(),
             ]);
-            $this->alokasiOtomatis($santri, $tanggal);
+            $this->prosesSetelahKredit($m);
 
             return $m;
         });
@@ -268,19 +268,20 @@ class TabunganService
     {
         $santri = $kredit->santri;
         $this->kunciSantri($santri);
-        if (in_array($kredit->jenis, [JenisMutasi::SetoranTransfer, JenisMutasi::SetoranTunai], true)) {
-            $this->potongPerSetoran($santri, $kredit);
-        }
+        $this->potongPerSetoran($santri, $kredit);
         $this->alokasiOtomatis($santri, $kredit->tanggal);
     }
 
-    /** Infak (dan jenis lain berfrekuensi per_setoran) dipotong setiap ada setoran, kecuali dinonaktifkan. */
+    /**
+     * Infak (dan jenis lain berfrekuensi per_setoran) dipotong setiap ada kredit yang jenisnya dipilih di menu
+     * Potongan otomatis (bawaan: setoran transfer & tunai), kecuali dinonaktifkan/dijeda/dikecualikan.
+     */
     private function potongPerSetoran(Santri $santri, TabunganMutasi $kredit): void
     {
         $ta = TahunAjaran::untukTanggal($kredit->tanggal);
         $jenisList = JenisTagihan::where('frekuensi', Frekuensi::PerSetoran->value)->where('aktif', true)->get();
         foreach ($jenisList as $jenis) {
-            if (! $jenis->berlakuUntuk($santri, $kredit->tanggal)) {
+            if (! in_array($kredit->jenis->value, $jenis->pemicuKredit(), true) || ! $jenis->berlakuUntuk($santri, $kredit->tanggal)) {
                 continue;
             }
             $tarif = $jenis->tarifUntuk($ta, $santri->kelasPada($ta), $kredit->tanggal);

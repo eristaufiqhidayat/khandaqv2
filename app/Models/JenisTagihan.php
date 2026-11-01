@@ -31,6 +31,7 @@ class JenisTagihan extends Model
         return [
             'frekuensi' => Frekuensi::class,
             'potong_otomatis' => 'boolean',
+            'pemicu_kredit' => 'array',
             'wajib_lunas_untuk_raport' => 'boolean',
             'boleh_dicicil' => 'boolean',
             'dihitung_tunggakan' => 'boolean',
@@ -54,6 +55,22 @@ class JenisTagihan extends Model
     }
 
     /** Tarif yang berlaku: tarif kelas lebih diutamakan dari tarif umum, berlaku_mulai terbaru <= tanggal. */
+    /** Jenis kredit yang bisa dipilih sebagai pemicu potongan per setoran (menu Potongan otomatis). */
+    public const PILIHAN_PEMICU = [
+        'setoran_transfer' => 'Setoran transfer (verifikasi manual / cocok mutasi BSI)',
+        'setoran_tunai' => 'Setoran tunai di kasir',
+        'transfer_dana' => 'Pindahan dana DSB/DU ke tabungan',
+    ];
+
+    /** Bawaan bila belum diatur: setoran transfer & tunai. */
+    public const PEMICU_BAWAAN = ['setoran_transfer', 'setoran_tunai'];
+
+    /** @return list<string> jenis kredit (JenisMutasi value) yang memicu potongan per setoran jenis ini */
+    public function pemicuKredit(): array
+    {
+        return $this->pemicu_kredit ?? self::PEMICU_BAWAAN;
+    }
+
     public function tarifUntuk(TahunAjaran $ta, ?Kelas $kelas, CarbonInterface $tanggal): ?Tarif
     {
         return $this->tarif()

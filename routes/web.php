@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/kecualikan', [PotonganController::class, 'kecualikan'])->name('kecualikan');
         Route::post('/jeda', [PotonganController::class, 'jeda'])->name('jeda');
         Route::post('/{pengecualian}/akhiri', [PotonganController::class, 'akhiri'])->name('akhiri');
+        Route::post('/pemicu/{jenis}', [PotonganController::class, 'pemicu'])->name('pemicu');
     });
 
     Route::middleware($izin(Izin::PeriodeKelola))->prefix('periode')->name('periode.')->group(function () {

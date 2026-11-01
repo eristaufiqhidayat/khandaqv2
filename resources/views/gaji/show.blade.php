@@ -35,8 +35,9 @@
     <div class="field"><label for="ps">Pesan bawaan (maks. 65)</label><input id="ps" name="pesan" type="text" required maxlength="65" value="{{ old('pesan', $p->pesan) }}"></div>
   </div>
 
-  <div class="card"><div class="tw"><table data-sortable data-renomor="0"><thead><tr>
+  <div class="card"><div class="tw"><table id="tabelRincian" data-sortable data-renomor="0"><thead><tr>
     <th data-sort="num" style="width:62px"><button type="button" class="th-sort">No</button></th>
+    <th class="num" data-sort="num" style="width:100px" title="Urutan pegawai saat ini di menu Data pegawai"><button type="button" class="th-sort">Urutan pegawai</button></th>
     <th data-sort="text"><button type="button" class="th-sort">Penerima</button></th>
     <th data-sort="text"><button type="button" class="th-sort">Rekening BSI</button></th>
     <th class="r" style="min-width:130px" data-sort="num"><button type="button" class="th-sort">Nominal (Rp)</button></th>
@@ -45,6 +46,7 @@
     @php($g = $galat[$r->id] ?? [])
     <tr @if ($g) style="background:var(--crit-soft)" @endif>
       <td><input name="rincian[{{ $r->id }}][urutan]" type="number" min="1" step="1" required value="{{ old("rincian.{$r->id}.urutan", $r->urutan ?: $i + 1) }}" aria-label="No urut {{ $r->pegawai->nama }}" class="num" style="width:56px;text-align:right"></td>
+      <td class="num muted">{{ $r->pegawai->urutan ?: '—' }}</td>
       <td><a href="{{ route('gaji.pegawai.edit', $r->pegawai) }}">{{ $r->pegawai->nama }}</a>@if ($r->pegawai->jabatan)<br><span class="hint">{{ $r->pegawai->jabatan }}</span>@endif
         @foreach ($g as $e)<br><span style="color:var(--crit);font-size:12.5px">{{ $e }}</span>@endforeach</td>
       <td class="num">{{ $r->pegawai->no_rekening }}<br><span class="hint">{{ $r->pegawai->nama_rekening }}</span></td>
@@ -53,13 +55,17 @@
       <td><label class="cek"><input type="checkbox" name="rincian[{{ $r->id }}][hapus]" value="1"><span class="sr-only">Hapus {{ $r->pegawai->nama }}</span></label></td>
     </tr>
   @endforeach
-  </tbody><tfoot><tr><th colspan="3">Total (sebelum disimpan ulang)</th><th class="r rp">{{ $rp($total) }}</th><th colspan="2"></th></tr></tfoot></table></div>
+  </tbody><tfoot><tr><th colspan="4">Total (sebelum disimpan ulang)</th><th class="r rp">{{ $rp($total) }}</th><th colspan="2"></th></tr></tfoot></table></div>
   @if ($bisaDitambah->isNotEmpty())
     <details style="margin-top:12px"><summary class="hint" style="cursor:pointer">Tambah pegawai aktif yang belum ada di daftar ({{ $bisaDitambah->count() }})</summary>
       <div class="row" style="flex-wrap:wrap;gap:6px 16px;margin-top:8px">@foreach ($bisaDitambah as $pg)<label class="cek"><input type="checkbox" name="tambah[]" value="{{ $pg->id }}"> {{ $pg->nama }}</label>@endforeach</div></details>
   @endif
   </div>
-  <div class="row"><button class="btn p">Simpan</button><span class="hint">Klik judul kolom untuk urutkan tampilan, atau ketik langsung di kolom "No" lalu klik judul "No" untuk menerapkan. Simpan untuk menyimpan nominal & urutan — urutan ini juga menentukan urutan baris di berkas BSI yang diunduh.</span></div>
+  <div class="row">
+    <button class="btn p">Simpan</button>
+    <button type="button" id="samakanUrutan" class="btn">Samakan urutan dengan Data pegawai</button>
+    <span class="hint">Klik judul kolom untuk urutkan tampilan, atau ketik langsung di kolom "No". Simpan untuk menyimpan nominal & urutan — urutan ini juga menentukan urutan baris di berkas BSI yang diunduh.</span>
+  </div>
 </form>
 
 <div class="card stack" style="margin-top:16px">
@@ -72,4 +78,19 @@
 </div>
 @endif
 @include('gaji._tabel-urut')
+<script>
+(() => {
+  const btn = document.getElementById('samakanUrutan');
+  const tabel = document.getElementById('tabelRincian');
+  if (!btn || !tabel) { return; }
+  btn.addEventListener('click', () => {
+    tabel.querySelectorAll('tbody tr').forEach((tr) => {
+      const input = tr.children[0].querySelector('input');
+      const acuan = tr.children[1].textContent.trim();
+      if (input && acuan && acuan !== '—') { input.value = acuan; }
+    });
+    tabel.querySelector('thead th[data-sort="num"] .th-sort')?.click();
+  });
+})();
+</script>
 @endsection
